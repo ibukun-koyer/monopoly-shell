@@ -23,12 +23,9 @@ int length_of_string(char string[],int name_length,int limit){
 	}
 	return name_length;
 }
-void initialize_player(char *name, int player_id, int curr_pos, float money, int jail, int time_in_jail, player_t *player){
+void initialize_player(char name[], int player_id, int curr_pos, float money, int jail, int time_in_jail, player_t *player){
 	player->name = malloc(16);
-	for (int i = 0; i < 16; i++){
-		player->name[i] = name[i];
-		
-	}	
+	memcpy(player->name, name, 16);	
 	printf("%s\n", player->name);
 //	player->name = name;
 	player->player_id = player_id;
@@ -112,7 +109,7 @@ restart:printf(">> Enter the number of players that would be participating: ");
 	dash_line(DASH);
 	int loop = 0;
 	//get player info.	
-	players = malloc(sizeof(player_t *) * num_of_players);
+	//players = malloc(sizeof(player_t *) * num_of_players);
 	while (loop < num_of_players){
 		
 		int name_length = 0;

@@ -7,7 +7,7 @@
 #define GREEN(string) "\x1b[32m" string "\x1b[0m"
 #define RED(string) "\x1b[31m" string "\x1b[0m"
 struct player{
-	char name[16];
+	char *name;
 	int player_id;
 	int current_position;
 	float money;
@@ -19,4 +19,4 @@ static int num_of_players;	//variable to store total number of players
 
 static int player_id = 1;	//the first player id number
 
-static player_t *players;	//array that stores the array of players.
+static player_t players[8];	//array that stores the array of players.
