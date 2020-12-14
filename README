@@ -1,0 +1,10 @@
+////////////////////////////////////////////////////////////////////////////////////////
+NAME: ADEKOYA IBUKUN
+///////////////////////////////////////////////////////////////////////////////////////
+-program makes use of ncurses to create new windows
+-monopoly.c is an old implementation that uses the regular linux terminal, use new_mon-
+opoly.c. 
+-Be sure to compile using the -lncurses flag, 'gcc new_monopoly.c -lncurses' to be prec-
+ise.
+-to learn more about ncurses, visit 'https://tldp.org/HOWTO/NCURSES-Programming-HOWTO/misc.html'
+
