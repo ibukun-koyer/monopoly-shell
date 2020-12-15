@@ -1,4 +1,59 @@
 #include "monopoly.h"
+char* get_color(int number){
+//if color is brown, color is 1
+//if color is sky blue, color is 2
+//if color is Pink, color is 3
+//if color is orange, color is 4,
+//if color is red, color is 5
+//if color is yellow, color is 6
+//if color is green, color is 7
+//if color is Dark blue, color is 8
+//if property is airport, color is 9
+//if property has no clue, color is 10
+	if (colors[number] == 1){
+		return "brown";
+	}
+	if (colors[number] == 2){
+		return "sky_blue";
+	}
+	if (colors[number] == 3){
+		return "Pink";
+	}
+	if (colors[number] == 4){
+		return "Orange";
+	}
+	if (colors[number] == 5){
+		return "Red";
+	}
+	if (colors[number] == 6){
+		return "Yellow";
+	}
+	if (colors[number] == 7){
+		return "Green";
+	}
+	if (colors[number] == 8){
+		return "Dark Blue";
+	}
+	else{
+		return "";
+	}
+}
+char *is_mortgaged(int number){
+	if (mortgage[number] == 1){
+		return "Mortgaged";
+	}
+	else{
+		return "Not Mortgaged";
+	}	 
+}
+char *owner(int number){
+	if (ownership[number] == 0){
+		return "NONE";
+	}
+
+	int player = ownership[number - 1];
+	return players[player].name;
+}
 /*This is a function that checks to see if the save file is empty or not*/
 int is_empty_save_slot(char *filename){
 	FILE *fp = fopen(filename, "r");
@@ -57,80 +112,106 @@ void startup_board(){
 	WINDOW *outer;	//create a wide window(exterior window)
 	WINDOW *inner;	//create an inner window(interior window)
 	outer = newwin(height, width, starty, startx);
+	
 	inner = newwin(inner_height, inner_width, inner_starty, inner_startx);
 	box(outer, 0, 0);	//create the box outline for the outer window
 	box(inner, 0, 0);	//create the box outline for the inner window
-	int inc = width / 10;	//increment to next x coordinate
-	int next_x = inc;	//next x location
+	int bars = 9;
+	for (int i = 0; i < width; i++){
+		if (i < height){
+			mvwaddch(outer, i , inner_startx, ACS_VLINE);
+			mvwaddch(outer,i, inner_startx + inner_width - 1, ACS_VLINE);
+		}
+		mvwaddch(outer, inner_starty , i, ACS_HLINE);
+		mvwaddch(outer, inner_starty + inner_height - 1 , i, ACS_HLINE);		
+	}
+	double inc = (double)inner_width / bars;
+	int next_x = inc + inner_startx;
 	//print vertical bars on the board
-	for (int i = 0; i < 9;i++){
+	for (int i = 0; i < (bars - 1);i++){
 		//This prints each vertical line
 		for (int j = 0; j < height; j++){
-			//fixes the first vertical line
-			if (i == 0){
 			
-				mvwaddch(outer,j, next_x+(width / 35), ACS_VLINE);
-			}
-			//fixes the last vertical line
-			else if (i == 8){
-				mvwaddch(outer,j, next_x-(width /35), ACS_VLINE);
-			}
-			//every other vertical line
-			else{
-			
-				mvwaddch(outer,j, next_x, ACS_VLINE);
-			}
+			mvwaddch(outer,j, next_x, ACS_VLINE);
 		} 
 		//move on to the next x coordinate
 		next_x+=inc;
 	} 
 	//MAYBE REFACTOR??
-	inc = height /10;	//increment to next y coordinate
-	int next_y = inc;	//next y location
+	double inc_y = (double)inner_height /bars;	//increment to next y coordinate1
+	double next_y = inc_y + inner_starty;	//next y location
 	//print horizontal bars on the board
-	for (int i = 0; i < 9;i++){
+	for (int i = 0; i < (bars - 1);i++){
 		//This prints each horizontal line
 		for (int j = 0; j < width; j++){
-			//fixes the first horizontal line
-			if (i == 0){
-				mvwaddch(outer,next_y+(height / 35), j, ACS_HLINE);
-			}
-			//fixes the last horizontal line
-			else if (i == 8){
-				mvwaddch(outer, next_y-(height /20), j,ACS_HLINE);
-			}
-			//every other horizontal line
-			else{
 			
-				mvwaddch(outer,next_y, j,ACS_HLINE);
-			}
+			mvwaddch(outer,next_y, j,ACS_HLINE);
+
 		} 
 		//move on to the next y coordinate
-		next_y+=inc;
+		next_y+=inc_y;
 	}
+	int color = 0;
 	//print numbers in each box
-	int start_index_x = width - (width/15);
-	int start_index_y = height - (height/10);
-	int inc_val = 10;
+	double start_index_x = width - (width/10.6);
+	double start_index_y = height - (height/10.7);
+	double inc_val = 11.5;
 	for (int i = 0; i < 4;i++){	
-		for (int j = 0; j < 10; j++){
-			if (j != 9){	
-				if (i == 1){
-					start_index_y -= (height/inc_val);
-				}
+		for (int j = 0; j < 11; j++){
+			int checker = 2;
+	
 			
 			
-				if (i == 2){
-					start_index_x += (width/inc_val);
-				}
-				if (i == 3){
-					start_index_y += (height/inc_val);
-				}	
+			int val = (i * 11)+(j + 1);
+			if ((val >= 12)&&(val <= 21)){
+				checker = 1;
+				start_index_y -= (height/inc_val);
+					
 			}
-			int val = (i * 10)+(j + 1);
-			mvwprintw(outer,start_index_y, start_index_x, "%d", val);
-			if (j != 9){
+				
+			
+			if ((val > 21)&&(val <= 31)){
+				checker = 2;
+				start_index_x += (width/inc_val);
+					
+			}
+			if (val > 31){
+				checker = 1;
+				start_index_y += (height/inc_val);
+			}
+
+			if (val < 41){
+				if (mortgage[val - 1] == 1){
+					wattron(outer, COLOR_PAIR(1));
+				}
+				mvwprintw(outer,start_index_y, start_index_x, "%d", val);
+				if (checker == 2){
+					mvwprintw(outer, start_index_y + 2, start_index_x, "%s", get_color(val-1));
+					if (prices[val - 1] != 0){
+						mvwprintw(outer, start_index_y + 3, start_index_x, "%d", prices[val - 1]);
+					}
+
+				}
+				if (checker == 1){
+					mvwprintw(outer , start_index_y, start_index_x + 3, "%s", get_color(val-1));
+					if (prices[val - 1] != 0){
+						mvwprintw(outer, start_index_y + 1, start_index_x + 5, "%d", prices[val - 1]);
+					}
+				}		
+				mvwprintw(outer, start_index_y + 1, start_index_x, "%s", owner(val - 1));
+			
+				if (mortgage[val - 1] == 1){
+					wattroff(outer, COLOR_PAIR(1));
+				}
+
+
+
+			}
+			
+
+			if (j != 10){
 				if (i == 0){
+					checker = 2;
 					start_index_x -= (width/inc_val);
 				}
 			}
@@ -139,9 +220,20 @@ void startup_board(){
 		} 
 
 	}
+	int begin_write = 1;
+
+	/*for (int i = 0; i < 40; i++){
+		mvwprintw(inner, begin_write + i, begin_write, "%d. %s->%s->%d",i + 1, property_names[i], get_color(i),prices[i]);
+	}*/
+	/*mvwprintw(inner, begin_write, begin_write, "1. GO(EARN 2000)");
+	mvwprintw(inner, begin_write + 1, begin_write, "2. %s->%s->BELONGS TO %s->MORGAGED: %s");*/
 	//display the windows on the screen
 	wrefresh(outer);
 	wrefresh(inner);
+	/*char *options[] = {"PRINT ALL PROPERTY DETAILS",
+			   "NEXT PLAYERS TURN", NULL};
+	main_menu(options, inner_height, inner_width);
+*/
 	getch();
 	destroy_win(outer);
 	destroy_win(inner);
@@ -237,12 +329,12 @@ void start_new_game(){
 	//get the users name and create structs for each player
 	while (loop < num_of_players){
 restart:	dash_line(DASH);
-		char real_name[17];
+		char real_name[6];
 		int i = 0;
 		printw("Please enter player %d's name: ", loop+1);
 		refresh();
 		noecho();	//hide user input to abstract backspace error
-		while (i < 15){
+		while (i < 5){
 			real_name[i] = getch();
 			//if enter, the user is done entering strings
 			if (real_name[i] == ENTER){
@@ -380,12 +472,21 @@ void main_menu(char **menu, int height, int width){
 } 
 
 int main(){
-	
+	for (int i = 0; i < 40; i++){
+		mortgage_value[i] = prices[i] /2;
+		mortgage[i] = 0;
+		ownership[i] = 0;
+	}
 	printf("starting up application\n\n");
 	refresh();
 	initscr();	//start up new window
 	int x,y;
 	getmaxyx(stdscr, y, x);	//get the max y and x
+	if ((y != 41) || (x != 132)){
+		endwin();
+		printf("Application: please open the application using fullscreen\n");
+		return 0;
+	}
 	DASH = x;		//make sure the dash prints to the max x
 	dash_line(DASH);
 	//if system has no colors 
@@ -397,11 +498,17 @@ int main(){
 	start_color();
 	init_pair(1, COLOR_RED, COLOR_BLACK);
 	init_pair(2, COLOR_GREEN, COLOR_BLACK);
+	init_pair(3, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(4, COLOR_BLUE, COLOR_BLACK);
+	init_pair(5, COLOR_CYAN, COLOR_BLACK);
+	init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+
 	attron(A_BOLD);
 	//attron(COLOR_PAIR(1));
 	printw("Welcome to Monopoly!!!\n");
 	refresh();
-	attroff(A_BOLD);	
+	attroff(A_BOLD);
+	
 	//attroff(COLOR_PAIR(1));
 	dash_line(DASH);
 	printw("press any button to continue\n");
@@ -409,7 +516,7 @@ int main(){
 	clear();
 
 	
-	print("The rules of the game are simple. Firstly, player usernames that include spaces are truncated. Usernames can only be 15 characters long. Only 2 - 8 players can play at a time. This game can be saved and be resumed at a later date. There is no autosave, save must be done by selecting the save option while playing", y, 0);
+	print("The rules of the game are simple. Firstly, player usernames that include spaces are truncated. Usernames can only be 15 characters long. Only 2 - 8 players can play at a time. This game can be saved and be resumed at a later date. There is no autosave, save must be done by selecting the save option while playing. PLEASE PLAY IN FULLSCREEN FOR OPTIMAL EXPERIENCE.", y, 0);
 
 	refresh();
 	mvprintw(0,0,"Press any button to continue\n");	
@@ -494,6 +601,20 @@ retry:		refresh();
 		
 	}
 	free(main);
+	clear();
+	refresh();
+	dash_line(DASH);
+	printw("ABOUT THE BOARD YOU ARE ABOUT TO SEE\n");
+	printw("1. The first value in the box represents the block number\n");
+	printw("2. The second value in the box represents the property color\n");
+	printw("3. The third value in the box represents the owner of the property\n");
+	printw("4. The last value reresents the price of the property\n");
+	printw("5. If the property is morgaged, all this values in the box turn red\n");
+	printw("6. The wide center block shows the name for each property\n");
+
+	dash_line(DASH);
+	printw("Press any key to continue");
+	getch();
 	clear();
 	refresh();
 	//draw up board, working on this function atm
