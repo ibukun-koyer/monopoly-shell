@@ -38,6 +38,157 @@ char* get_color(int number){
 		return "";
 	}
 }
+void menu_save(int load_save){
+retry:	refresh();
+	char empty[3];	
+	
+		
+	char **slots = malloc(sizeof(char *) * 4);
+	//if ENOSPC
+	if (slots == NULL){
+		endwin();
+		printf("No space in memory\n");
+		exit(1);
+	}
+	//check to see if slot 1 has any save data
+	if (is_empty_save_slot(save_file_one) == 1){
+		slots[0] = "EMPTY SLOT";
+		empty[0] = 1;
+	}
+	else{
+		slots[0] = save_one;
+		empty[0] = 0;
+	}
+	//check to see if slot 2 has any save data
+	if (is_empty_save_slot(save_file_two) == 1){
+		slots[1] = "EMPTY SLOT";
+		empty[1] = 1;
+	}
+	else{
+		slots[1] = save_two;
+		empty[1] = 0;
+	}
+	//check to see if slot 3 has any save data
+	if (is_empty_save_slot(save_file_three) == 1){
+		slots[2] = "EMPTY SLOT";
+		empty[2] = 1;
+	}
+	else{
+		slots[2] = save_three;
+		empty[2] = 0;
+	}
+	//start up the menu 
+	main_menu(slots, 6, 20);
+	free(slots);
+	clear();
+	
+
+	//if the entered slot is empty
+	if ((empty[highlight - 1] == 1)&&(load_save == 0)){
+		dash_line(DASH);
+		mvprintw(0, 0, ">> The current slot is empty\n");
+		printw(">> Would you like to select another slot or start a new game?\n");
+		//inform the user that it is empty and ask for the next step
+		int retry = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", ">> Input 1 to select another slot and 0 to start a new game: ");
+		if (retry == 1){
+			//back to the load pick, this is because other slots may have data
+			goto retry;
+		}
+		else{
+			//if the user decides to start a new game
+			start_new_game();
+		}		 
+	} 
+	else if (empty[highlight - 1] == 0){
+		if(load_save == 0){
+			//load the data
+		}
+		if (load_save == 1){
+			//prompt for save name and set name
+			if (highlight == 1){
+				int save = save_file(save_file_one);
+				if (save == 1)
+					goto retry;
+			}
+			if (highlight == 2){
+				int save = save_file(save_file_two);
+				if (save == 1)
+					goto retry;
+			}
+			if (highlight == 3){
+				int save = save_file(save_file_three);
+				if (save == 1)
+					goto retry;	
+			}
+			
+		}
+	}			 
+}
+int save_file(char *file_name){
+	int empty = is_empty_save_slot(file_name);
+	if (empty == 0){
+		clear();
+		int retry = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", ">> Would you like to overwrite slot?, please enter either 1 for yes or 0 for no");
+		if (retry == 0){
+			return 0;	//not attempting to save
+		}
+	}
+	FILE *fp; 
+	if (!(fp = fopen(file_name, "wb+"))){
+		printw("Save file may have been corrupted, select another slot\n");
+		return 1;		//save file error, back to save file pick
+	}
+	fwrite(&curr_player, sizeof(int),1, fp);
+	fwrite(&num_of_players, sizeof(int), 1, fp);
+	for (int i = 0;  i < num_of_players; i++){
+		fwrite(players[i].name, sizeof(char), 6, fp);
+		fwrite(&players[i].player_id, sizeof(int), 1, fp);
+		fwrite(&players[i].current_position, sizeof(int), 1, fp);
+		fwrite(&players[i].money, sizeof(int), 1, fp);
+		fwrite(&players[i].time_spent_in_jail, sizeof(int), 1, fp);
+	}
+	int next_name = 0;
+	char *name = save_one;
+	
+	int ended = 0;
+again:	for (int i = 0; i < 15; i++){
+		if (name[i] == '\0'){
+			ended = 1;
+		}
+		if (ended == 0){
+			fwrite(&name[i], sizeof(char), 1, fp);
+		}
+		else if (ended == 1){
+			char nul = '\0';
+			fwrite(&nul, sizeof(char), 1, fp);
+		}
+	}
+	ended = 0;
+	next_name++;
+	if (next_name == 1){
+		name = save_two;
+		goto again;
+	}
+	if (next_name == 2){
+		name = save_three;
+		goto again;
+	}
+	fwrite(mortgage, sizeof(int), 40, fp);
+	fwrite(ownership, sizeof(int), 40, fp);
+	return 2; 	//successful writing to save file
+}	
+
+	
+int saving(int on_exit){
+	if (on_exit == 1){
+		int save = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", "Would you like to save?, enter 1 for yes and 0 for no");
+		if (save == 0){
+			return 0;
+		}
+	}
+		
+					
+}	
 char *is_mortgaged(int number){
 	if (mortgage[number] == 1){
 		return "Mortgaged";
@@ -88,7 +239,7 @@ void dash_line(int number){
 }
 /*initializes a player struct*/
 void initialize_player(char name[], int player_id, int curr_pos, float money, int jail, int time_in_jail, player_t *player){
-	player->name = malloc(16);
+	//player->name = malloc(16);
 	memcpy(player->name, name, 16);	
 	player->player_id = player_id;
 	player->current_position = curr_pos;
@@ -220,20 +371,57 @@ void startup_board(){
 		} 
 
 	}
-	int begin_write = 1;
+	int begin_write = 3;
+	int nex = 0;
+	
+	for (int i = 0; i < 40; i++){
+		if ( nex < 2){
+			if (nex == 0){
+				mvwprintw(inner, begin_write + (i/2), begin_write, "%d. %20s",i + 1, property_names[i]);
+			}
+			else{
+				mvwprintw(inner, begin_write + (i/2), begin_write + (inner_width/2), "%d. %20s",i + 1, property_names[i]);
+			}
+			nex++;
+		}
+		else{
+			mvwprintw(inner, begin_write + i, begin_write, "%d. %20s",i + 1, property_names[i]);
+		}
+		if (nex == 2){
+			nex = 0;
+		}		
+		
+	}
 
-	/*for (int i = 0; i < 40; i++){
-		mvwprintw(inner, begin_write + i, begin_write, "%d. %s->%s->%d",i + 1, property_names[i], get_color(i),prices[i]);
-	}*/
-	/*mvwprintw(inner, begin_write, begin_write, "1. GO(EARN 2000)");
-	mvwprintw(inner, begin_write + 1, begin_write, "2. %s->%s->BELONGS TO %s->MORGAGED: %s");*/
+
 	//display the windows on the screen
 	wrefresh(outer);
 	wrefresh(inner);
-	/*char *options[] = {"PRINT ALL PROPERTY DETAILS",
-			   "NEXT PLAYERS TURN", NULL};
-	main_menu(options, inner_height, inner_width);
-*/
+
+	char ch = getch();
+	
+	if (ch == EXIT){
+		destroy_win(outer);
+		destroy_win(inner);
+		clear();
+		refresh();
+		int y, x;
+		getmaxyx(stdscr, y, x);
+		echo();
+		printw(">> Would You like to exit the application?, enter 1 for yes and 0 for no\n");
+		int retry = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", "");
+		if (retry == 1){
+			clear();
+			
+			//back to the load pick, this is because other slots may have data	
+			//change this to include a save question when save is implemented
+			
+			endwin();
+			exit(0);
+		}
+	}
+		
+	wrefresh(inner);
 	getch();
 	destroy_win(outer);
 	destroy_win(inner);
@@ -330,8 +518,9 @@ void start_new_game(){
 	while (loop < num_of_players){
 restart:	dash_line(DASH);
 		char real_name[6];
-		int i = 0;
+		
 		printw("Please enter player %d's name: ", loop+1);
+		int i = 0;
 		refresh();
 		noecho();	//hide user input to abstract backspace error
 		while (i < 5){
@@ -477,14 +666,14 @@ int main(){
 		mortgage[i] = 0;
 		ownership[i] = 0;
 	}
-	printf("starting up application\n\n");
+	printf(GREEN("APPLICATION: starting up application\n\n"));
 	refresh();
 	initscr();	//start up new window
 	int x,y;
 	getmaxyx(stdscr, y, x);	//get the max y and x
 	if ((y != 41) || (x != 132)){
 		endwin();
-		printf("Application: please open the application using fullscreen\n");
+		printf(RED("APPLICATION: please open the application using the default screen, precisely 132 x 41\n"));
 		return 0;
 	}
 	DASH = x;		//make sure the dash prints to the max x
@@ -492,7 +681,7 @@ int main(){
 	//if system has no colors 
 	if (has_colors() == FALSE){
 		endwin();		
-		printf("\nThis system has no colors\n");
+		printf(RED("\nAPPLICATION: This system has no colors\n"));
 		return 1;
 	}
 	start_color();
@@ -542,61 +731,7 @@ int main(){
 	}
 	
 	if (highlight == 2){
-retry:		refresh();
-		char empty[3];
-		char **slots = malloc(sizeof(char *) * 4);
-		//if ENOSPC
-		if (slots == NULL){
-			endwin();
-			printf("No space in memory\n");
-		}
-		//check to see if slot 1 has any save data
-		if (is_empty_save_slot(save_file_one) == 1){
-			slots[0] = "EMPTY SLOT";
-			empty[0] = 1;
-		}
-		else{
-			slots[0] = "SAVE_SLOT_ONE";
-			empty[0] = 0;
-		}
-		//check to see if slot 2 has any save data
-		if (is_empty_save_slot(save_file_two) == 1){
-			slots[1] = "EMPTY SLOT";
-			empty[1] = 1;
-		}
-		else{
-			slots[1] = "SAVE_SLOT_TWO";
-			empty[1] = 0;
-		}
-		//check to see if slot 3 has any save data
-		if (is_empty_save_slot(save_file_three) == 1){
-			slots[2] = "EMPTY SLOT";
-			empty[2] = 1;
-		}
-		else{
-			slots[2] = "SAVE_SLOT_THREE";
-			empty[2] = 0;
-		}
-		//start up the menu 
-		main_menu(slots, 6, 20);
-		free(slots);
-		clear();
-		//if the entered slot is empty
-		if (empty[highlight - 1] == 1){
-			dash_line(DASH);
-			mvprintw(0, 0, ">> The current slot is empty\n");
-			printw(">> Would you like to select another slot or start a new game?\n");
-			//inform the user that it is empty and ask for the next step
-			int retry = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", ">> Input 1 to select another slot and 0 to start a new game: ");
-			if (retry == 1){
-				//back to the load pick, this is because other slots may have data
-				goto retry;
-			}
-			else{
-				//if the user decides to start a new game
-				start_new_game();
-			}		 
-		} 
+		menu_save(0);
 		
 		
 	}
@@ -611,6 +746,7 @@ retry:		refresh();
 	printw("4. The last value reresents the price of the property\n");
 	printw("5. If the property is morgaged, all this values in the box turn red\n");
 	printw("6. The wide center block shows the name for each property\n");
+	printw("7. The board will be printed after everyturn, press any button when you see this board to move on to the next players turn\n");
 
 	dash_line(DASH);
 	printw("Press any key to continue");
@@ -619,8 +755,8 @@ retry:		refresh();
 	refresh();
 	//draw up board, working on this function atm
 	startup_board();
-
+	
 	endwin();
-	printf("Application closed successfully\n");
+	printf(GREEN("APPLICATION: Application closed successfully\n"));
 	return 0;
 }
