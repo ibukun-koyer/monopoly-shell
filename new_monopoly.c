@@ -1,4 +1,42 @@
 #include "monopoly.h"
+void save_name(char real_name[], int highlight){
+	if (highlight == 1){
+		save_one = real_name;
+	}
+	if (highlight == 2){
+		save_two = real_name;
+	}
+	if (highlight == 3){
+		save_three = real_name;
+	}
+}
+int string_retrieval_user(char real_name[], int size){
+	int i = 0;
+	refresh();
+	noecho();	//hide user input to abstract backspace error
+	while (i < size - 1){
+		real_name[i] = getch();
+		//if enter, the user is done entering strings
+		if (real_name[i] == ENTER){
+			break;
+		}
+		//if backspace, the user is trying to remove previous character, something that is not achievable with getch(), so i abstracted backspace oper
+		if (real_name[i] == BACKSPACE){
+			real_name[i] = '\0';
+			if (i >= 1){
+				real_name[i-1] = '\0';
+				i--;
+			}
+			i--;
+				
+				
+		}
+		
+		i++;
+	}
+	real_name[i] = '\0';
+	return i;
+}
 char* get_color(int number){
 //if color is brown, color is 1
 //if color is sky blue, color is 2
@@ -99,26 +137,43 @@ retry:	refresh();
 			start_new_game();
 		}		 
 	} 
-	else if (empty[highlight - 1] == 0){
+	else if ((empty[highlight - 1] == 0)||(load_save == 1)){
 		if(load_save == 0){
 			//load the data
 		}
 		if (load_save == 1){
 			//prompt for save name and set name
+			clear();
+			char real_name[16];
+			printw("Please enter the save name :");
+			int i = string_retrieval_user(real_name, 16);
+			save_name(real_name, highlight);
 			if (highlight == 1){
 				int save = save_file(save_file_one);
-				if (save == 1)
+				if (save == 1){
+					memset(real_name, '\0', 16);
+					string_retrieval_user(real_name, 16);
+					save_name(real_name, highlight);
 					goto retry;
+				}
 			}
 			if (highlight == 2){
 				int save = save_file(save_file_two);
-				if (save == 1)
+				if (save == 1){
+					memset(real_name, '\0', 16);
+					string_retrieval_user(real_name, 16);
+					save_name(real_name, highlight);
 					goto retry;
+				}
 			}
 			if (highlight == 3){
 				int save = save_file(save_file_three);
-				if (save == 1)
-					goto retry;	
+				if (save == 1){
+					memset(real_name, '\0', 16);
+					string_retrieval_user(real_name, 16);
+					save_name(real_name, highlight);
+					goto retry;
+				}	
 			}
 			
 		}
@@ -151,15 +206,18 @@ int save_file(char *file_name){
 	char *name = save_one;
 	
 	int ended = 0;
-again:	for (int i = 0; i < 15; i++){
+	FILE *fp1 = fopen(save_file_save_name, "wb+");
+again:	for (int i = 0; i < 16; i++){
 		if (name[i] == '\0'){
 			ended = 1;
 		}
 		if (ended == 0){
+			fwrite(&name[i], sizeof(char), 1, fp1);
 			fwrite(&name[i], sizeof(char), 1, fp);
 		}
 		else if (ended == 1){
 			char nul = '\0';
+			fwrite(&nul, sizeof(char), 1, fp1);
 			fwrite(&nul, sizeof(char), 1, fp);
 		}
 	}
@@ -173,8 +231,11 @@ again:	for (int i = 0; i < 15; i++){
 		name = save_three;
 		goto again;
 	}
+	
 	fwrite(mortgage, sizeof(int), 40, fp);
 	fwrite(ownership, sizeof(int), 40, fp);
+	fclose(fp1);
+	fclose(fp);
 	return 2; 	//successful writing to save file
 }	
 
@@ -186,7 +247,8 @@ int saving(int on_exit){
 			return 0;
 		}
 	}
-		
+	menu_save(1);         //save to file
+	return 1;	
 					
 }	
 char *is_mortgaged(int number){
@@ -415,6 +477,7 @@ void startup_board(){
 			
 			//back to the load pick, this is because other slots may have data	
 			//change this to include a save question when save is implemented
+			saving(1);
 			
 			endwin();
 			exit(0);
@@ -520,30 +583,7 @@ restart:	dash_line(DASH);
 		char real_name[6];
 		
 		printw("Please enter player %d's name: ", loop+1);
-		int i = 0;
-		refresh();
-		noecho();	//hide user input to abstract backspace error
-		while (i < 5){
-			real_name[i] = getch();
-			//if enter, the user is done entering strings
-			if (real_name[i] == ENTER){
-				break;
-			}
-			//if backspace, the user is trying to remove previous character, something that is not achievable with getch(), so i abstracted backspace oper
-			if (real_name[i] == BACKSPACE){
-				real_name[i] = '\0';
-				if (i >= 1){
-					real_name[i-1] = '\0';
-					i--;
-				}
-				i--;
-				
-				
-			}
-		
-			i++;
-		}
-		real_name[i] = '\0';
+		int i = string_retrieval_user(real_name, 6);
 		if (i == 0){
 			//if the user entered nothing
 			attron(COLOR_PAIR(1));
@@ -725,8 +765,31 @@ int main(){
 	main_menu(main, 6, 30);
 	clear();
 	main[3] = NULL;
+	
+	//start reading the file names in
+	FILE *fp = fopen(save_file_save_name, "rb");
+	if (fp == NULL){
+		goto skip;
+	}
+	int next_name = 0;
+again:
+	if (next_name == 0){	
+		fread(&save_one, sizeof(char), 16, fp);
+	}
+	else if (next_name == 1){
+		fread(&save_two, sizeof(char), 16, fp);
+	}
+	else if (next_name == 2){
+		fread(&save_three, sizeof(char), 16, fp);
+	}	
+	next_name++;
+	if (next_name < 3){
+		goto again;
+	}
+	fclose(fp);
+	//done reading file names
 	//if the user pressed enter while highlight was 1, start new game
-	if (highlight == 1){
+skip:	if (highlight == 1){
 		start_new_game();
 	}
 	
