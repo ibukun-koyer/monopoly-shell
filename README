@@ -7,4 +7,5 @@ opoly.c.
 -Be sure to compile using the -lncurses flag, 'gcc new_monopoly.c -lncurses' to be prec-
 ise.
 -to learn more about ncurses, visit 'https://tldp.org/HOWTO/NCURSES-Programming-HOWTO/misc.html'
+-monopoly rules 'http://www.jdawiseman.com/papers/trivia/monopoly-rents.html'
 
