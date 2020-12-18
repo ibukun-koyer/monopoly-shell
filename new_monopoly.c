@@ -1,18 +1,23 @@
 #include "monopoly.h"
 void save_name(char real_name[], int highlight){
 	if (highlight == 1){
-		save_one = real_name;
+		//save_one = real_name;
+		memcpy(save_one, real_name, 16);
 	}
 	if (highlight == 2){
-		save_two = real_name;
+		//save_two = real_name;
+		memcpy(save_two, real_name, 16);
 	}
 	if (highlight == 3){
-		save_three = real_name;
+		//save_three = real_name;
+		memcpy(save_three, real_name, 16);
 	}
 }
 int string_retrieval_user(char real_name[], int size){
-	int i = 0;
+start_again:
 	refresh();
+	int i = 0;
+	
 	noecho();	//hide user input to abstract backspace error
 	while (i < size - 1){
 		real_name[i] = getch();
@@ -35,6 +40,13 @@ int string_retrieval_user(char real_name[], int size){
 		i++;
 	}
 	real_name[i] = '\0';
+	if (i == 0){
+		//if the user entered nothing
+		attron(COLOR_PAIR(1));
+		printw("\nstring is invalid, please enter a username with atleast one character\n");
+		attroff(COLOR_PAIR(1));
+		goto start_again;
+	}
 	return i;
 }
 char* get_color(int number){
@@ -140,12 +152,21 @@ retry:	refresh();
 	else if ((empty[highlight - 1] == 0)||(load_save == 1)){
 		if(load_save == 0){
 			//load the data
+			if (highlight == 1){
+				load_file(save_file_one);
+			}
+			if (highlight == 2){
+				load_file(save_file_two);
+			}
+			if (highlight == 3){
+				load_file(save_file_three);
+			}
 		}
 		if (load_save == 1){
 			//prompt for save name and set name
 			clear();
 			char real_name[16];
-			printw("Please enter the save name :");
+			printw("Please enter the save name: ");
 			int i = string_retrieval_user(real_name, 16);
 			save_name(real_name, highlight);
 			if (highlight == 1){
@@ -183,13 +204,14 @@ int save_file(char *file_name){
 	int empty = is_empty_save_slot(file_name);
 	if (empty == 0){
 		clear();
-		int retry = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", ">> Would you like to overwrite slot?, please enter either 1 for yes or 0 for no");
+		int retry = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", ">> Would you like to overwrite slot?, please enter either 1 for yes or 0 for no: ");
 		if (retry == 0){
 			return 0;	//not attempting to save
 		}
 	}
 	FILE *fp; 
 	if (!(fp = fopen(file_name, "wb+"))){
+		clear();
 		printw("Save file may have been corrupted, select another slot\n");
 		return 1;		//save file error, back to save file pick
 	}
@@ -201,6 +223,7 @@ int save_file(char *file_name){
 		fwrite(&players[i].current_position, sizeof(int), 1, fp);
 		fwrite(&players[i].money, sizeof(int), 1, fp);
 		fwrite(&players[i].time_spent_in_jail, sizeof(int), 1, fp);
+		fwrite(&players[i].GOOJFC, sizeof(int), 1, fp);
 	}
 	int next_name = 0;
 	char *name = save_one;
@@ -234,15 +257,44 @@ again:	for (int i = 0; i < 16; i++){
 	
 	fwrite(mortgage, sizeof(int), 40, fp);
 	fwrite(ownership, sizeof(int), 40, fp);
+	fwrite(houses, sizeof(int), 40, fp);
 	fclose(fp1);
 	fclose(fp);
 	return 2; 	//successful writing to save file
 }	
 
+int load_file(char *filename){
+	FILE *fp; 
+	if (!(fp = fopen(filename, "rb"))){
+		printw("Save file may have been corrupted, select another slot\n");
+		return 0;		//save file error, back to save file pick
+	}
+	fread(&curr_player, sizeof(int),1, fp);
+	fread(&num_of_players, sizeof(int), 1, fp);
+	for (int i = 0;  i < num_of_players; i++){
+		fread(players[i].name, sizeof(char), 6, fp);
+		fread(&players[i].player_id, sizeof(int), 1, fp);
+		fread(&players[i].current_position, sizeof(int), 1, fp);
+		fread(&players[i].money, sizeof(int), 1, fp);
+		fread(&players[i].time_spent_in_jail, sizeof(int), 1, fp);
+		fread(&players[i].GOOJFC, sizeof(int), 1, fp);
+	}
+
 	
+	fread(mortgage, sizeof(int), 40, fp);
+	/*for (int i = 0; i < num_of_players; i++){
+		printw("The %dth player name is %s\n", i+1, players[i].name);
+	}*/
+	refresh();
+	fread(ownership, sizeof(int), 40, fp);
+	fread(houses, sizeof(int), 40, fp);
+	fclose(fp);
+	//getch();
+	return 1;			//success 
+}	
 int saving(int on_exit){
 	if (on_exit == 1){
-		int save = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", "Would you like to save?, enter 1 for yes and 0 for no");
+		int save = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", "Would you like to save?, enter 1 for yes and 0 for no: ");
 		if (save == 0){
 			return 0;
 		}
@@ -300,7 +352,7 @@ void dash_line(int number){
 
 }
 /*initializes a player struct*/
-void initialize_player(char name[], int player_id, int curr_pos, float money, int jail, int time_in_jail, player_t *player){
+void initialize_player(char name[], int player_id, int curr_pos, float money, int jail, int time_in_jail, int GOOJFC, player_t *player){
 	//player->name = malloc(16);
 	memcpy(player->name, name, 16);	
 	player->player_id = player_id;
@@ -308,6 +360,7 @@ void initialize_player(char name[], int player_id, int curr_pos, float money, in
 	player->money = money;
 	player->in_jail = jail;
 	player->time_spent_in_jail=time_in_jail;
+	player->GOOJFC = GOOJFC;
 }
 /*Prints the monopoly board, still in progress*/
 void startup_board(){
@@ -459,8 +512,17 @@ void startup_board(){
 	//display the windows on the screen
 	wrefresh(outer);
 	wrefresh(inner);
-
+	raw();
 	char ch = getch();
+	clear();
+	cbreak();
+	
+	//printw("The key entered is %d\n", ch);
+	refresh();
+	if (ch == CTRL_S){
+		clear();
+		saving(0);
+	}
 	
 	if (ch == EXIT){
 		destroy_win(outer);
@@ -470,7 +532,7 @@ void startup_board(){
 		int y, x;
 		getmaxyx(stdscr, y, x);
 		echo();
-		printw(">> Would You like to exit the application?, enter 1 for yes and 0 for no\n");
+		printw(">> Would You like to exit the application?, enter 1 for yes and 0 for no: \n");
 		int retry = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", "");
 		if (retry == 1){
 			clear();
@@ -479,13 +541,18 @@ void startup_board(){
 			//change this to include a save question when save is implemented
 			saving(1);
 			
+			
 			endwin();
 			exit(0);
+		}
+		if (retry == 0){
+			clear();
+			return;
 		}
 	}
 		
 	wrefresh(inner);
-	getch();
+	//getch();
 	destroy_win(outer);
 	destroy_win(inner);
 }
@@ -584,13 +651,7 @@ restart:	dash_line(DASH);
 		
 		printw("Please enter player %d's name: ", loop+1);
 		int i = string_retrieval_user(real_name, 6);
-		if (i == 0){
-			//if the user entered nothing
-			attron(COLOR_PAIR(1));
-			printw("\nUsername is invalid, please enter a username with atleast one character\n");
-			attroff(COLOR_PAIR(1));
-			goto restart;
-		}
+
 		//check to see if the user name entered has already been entered
 		for (int i = 0; i < player_id - 1; i++){
 			if (strcmp(real_name, players[i].name) == 0){
@@ -604,7 +665,7 @@ restart:	dash_line(DASH);
 			
 
 		//init each player struct
-		initialize_player(real_name, player_id ,0, INITIAL_CASH, 0, 0, &players[loop]);
+		initialize_player(real_name, player_id ,1, INITIAL_CASH, 0, 0, 0, &players[loop]);
 		
 		attron(COLOR_PAIR(2));
 		printw("\nWelcome, %s, you are player %d. Press any key to continue\n", players[loop].name, players[loop].player_id);
@@ -700,126 +761,4 @@ void main_menu(char **menu, int height, int width){
 	echo();
 } 
 
-int main(){
-	for (int i = 0; i < 40; i++){
-		mortgage_value[i] = prices[i] /2;
-		mortgage[i] = 0;
-		ownership[i] = 0;
-	}
-	printf(GREEN("APPLICATION: starting up application\n\n"));
-	refresh();
-	initscr();	//start up new window
-	int x,y;
-	getmaxyx(stdscr, y, x);	//get the max y and x
-	if ((y != 41) || (x != 132)){
-		endwin();
-		printf(RED("APPLICATION: please open the application using the default screen, precisely 132 x 41\n"));
-		return 0;
-	}
-	DASH = x;		//make sure the dash prints to the max x
-	dash_line(DASH);
-	//if system has no colors 
-	if (has_colors() == FALSE){
-		endwin();		
-		printf(RED("\nAPPLICATION: This system has no colors\n"));
-		return 1;
-	}
-	start_color();
-	init_pair(1, COLOR_RED, COLOR_BLACK);
-	init_pair(2, COLOR_GREEN, COLOR_BLACK);
-	init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-	init_pair(4, COLOR_BLUE, COLOR_BLACK);
-	init_pair(5, COLOR_CYAN, COLOR_BLACK);
-	init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
 
-	attron(A_BOLD);
-	//attron(COLOR_PAIR(1));
-	printw("Welcome to Monopoly!!!\n");
-	refresh();
-	attroff(A_BOLD);
-	
-	//attroff(COLOR_PAIR(1));
-	dash_line(DASH);
-	printw("press any button to continue\n");
-	getch();
-	clear();
-
-	
-	print("The rules of the game are simple. Firstly, player usernames that include spaces are truncated. Usernames can only be 15 characters long. Only 2 - 8 players can play at a time. This game can be saved and be resumed at a later date. There is no autosave, save must be done by selecting the save option while playing. PLEASE PLAY IN FULLSCREEN FOR OPTIMAL EXPERIENCE.", y, 0);
-
-	refresh();
-	mvprintw(0,0,"Press any button to continue\n");	
-	refresh();
-	getch();
-	clear();
-	refresh();
-	char **main = malloc(sizeof(char *) * 3);
-	if (main == NULL){
-		endwin();
-		printf("No space in memory\n");
-	}
-	main[0] = "Start new game";
-	main[1] = "Load saved game";
-	main[2] = NULL;
-	
-	main_menu(main, 6, 30);
-	clear();
-	main[3] = NULL;
-	
-	//start reading the file names in
-	FILE *fp = fopen(save_file_save_name, "rb");
-	if (fp == NULL){
-		goto skip;
-	}
-	int next_name = 0;
-again:
-	if (next_name == 0){	
-		fread(&save_one, sizeof(char), 16, fp);
-	}
-	else if (next_name == 1){
-		fread(&save_two, sizeof(char), 16, fp);
-	}
-	else if (next_name == 2){
-		fread(&save_three, sizeof(char), 16, fp);
-	}	
-	next_name++;
-	if (next_name < 3){
-		goto again;
-	}
-	fclose(fp);
-	//done reading file names
-	//if the user pressed enter while highlight was 1, start new game
-skip:	if (highlight == 1){
-		start_new_game();
-	}
-	
-	if (highlight == 2){
-		menu_save(0);
-		
-		
-	}
-	free(main);
-	clear();
-	refresh();
-	dash_line(DASH);
-	printw("ABOUT THE BOARD YOU ARE ABOUT TO SEE\n");
-	printw("1. The first value in the box represents the block number\n");
-	printw("2. The second value in the box represents the property color\n");
-	printw("3. The third value in the box represents the owner of the property\n");
-	printw("4. The last value reresents the price of the property\n");
-	printw("5. If the property is morgaged, all this values in the box turn red\n");
-	printw("6. The wide center block shows the name for each property\n");
-	printw("7. The board will be printed after everyturn, press any button when you see this board to move on to the next players turn\n");
-
-	dash_line(DASH);
-	printw("Press any key to continue");
-	getch();
-	clear();
-	refresh();
-	//draw up board, working on this function atm
-	startup_board();
-	
-	endwin();
-	printf(GREEN("APPLICATION: Application closed successfully\n"));
-	return 0;
-}
