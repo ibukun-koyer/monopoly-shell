@@ -84,6 +84,12 @@ char* get_color(int number){
 	if (colors[number] == 8){
 		return "Dark Blue";
 	}
+	if (colors[number] == 9){
+		return "AIRPORTS";
+	}
+	if (colors[number] == 8){
+		return "UTILITIES";
+	}
 	else{
 		return "";
 	}
@@ -221,7 +227,8 @@ int save_file(char *file_name){
 		fwrite(players[i].name, sizeof(char), 6, fp);
 		fwrite(&players[i].player_id, sizeof(int), 1, fp);
 		fwrite(&players[i].current_position, sizeof(int), 1, fp);
-		fwrite(&players[i].money, sizeof(int), 1, fp);
+		fwrite(&players[i].money, sizeof(float), 1, fp);
+		fwrite(&players[i].in_jail, sizeof(int), 1, fp);
 		fwrite(&players[i].time_spent_in_jail, sizeof(int), 1, fp);
 		fwrite(&players[i].GOOJFC, sizeof(int), 1, fp);
 	}
@@ -236,12 +243,12 @@ again:	for (int i = 0; i < 16; i++){
 		}
 		if (ended == 0){
 			fwrite(&name[i], sizeof(char), 1, fp1);
-			fwrite(&name[i], sizeof(char), 1, fp);
+			//fwrite(&name[i], sizeof(char), 1, fp);
 		}
 		else if (ended == 1){
 			char nul = '\0';
 			fwrite(&nul, sizeof(char), 1, fp1);
-			fwrite(&nul, sizeof(char), 1, fp);
+			//fwrite(&nul, sizeof(char), 1, fp);
 		}
 	}
 	ended = 0;
@@ -275,16 +282,14 @@ int load_file(char *filename){
 		fread(players[i].name, sizeof(char), 6, fp);
 		fread(&players[i].player_id, sizeof(int), 1, fp);
 		fread(&players[i].current_position, sizeof(int), 1, fp);
-		fread(&players[i].money, sizeof(int), 1, fp);
+		fread(&players[i].money, sizeof(float), 1, fp);
+		fread(&players[i].in_jail, sizeof(int), 1, fp);
 		fread(&players[i].time_spent_in_jail, sizeof(int), 1, fp);
 		fread(&players[i].GOOJFC, sizeof(int), 1, fp);
 	}
 
 	
 	fread(mortgage, sizeof(int), 40, fp);
-	/*for (int i = 0; i < num_of_players; i++){
-		printw("The %dth player name is %s\n", i+1, players[i].name);
-	}*/
 	refresh();
 	fread(ownership, sizeof(int), 40, fp);
 	fread(houses, sizeof(int), 40, fp);
@@ -316,7 +321,7 @@ char *owner(int number){
 		return "NONE";
 	}
 
-	int player = ownership[number - 1];
+	int player = ownership[number] - 1;
 	return players[player].name;
 }
 /*This is a function that checks to see if the save file is empty or not*/
