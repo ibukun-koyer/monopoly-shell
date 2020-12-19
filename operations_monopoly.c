@@ -1,5 +1,355 @@
 #include "new_monopoly.c"
-void handle_payment(int action, int index, int pay_to_or_pay_from, int price, int who){
+//HUGE FIX REQUIRED-CHANGE INDEX + 1 TO players[index].player_id - FIXED
+//ANOTHER HUGE ISSUE, SAVE FILE LOADS INCORRECT PROPERTIES FOR PLAYERS - FIXED
+void declare_bankruptcy(int index){
+	//remove all houses the player owned and also unmortgage and sell the properties to other players
+	int temp = players[index].player_id;
+	for (int i = 0; i < 40; i++){
+		if (ownership[i] == temp){
+			mortgage[i] = 0;
+			houses[i]   = 0;
+		}
+		
+	}
+	//current player declared bankruptcy
+	for (int i = 0; i < num_of_players - 1;i++){
+		if (i >= index){
+			players[i] = players[i + 1];
+		}
+	}
+	num_of_players-=1;
+	for (int i = 0; i < 40; i++){
+		if (ownership[i] == temp){
+			auction(0, i);
+		}
+	}
+	
+}
+void mortgage_property(int index, int mortgage_var){
+	//1 means mortgage and 0 means un-mortgage
+	clear();
+	refresh();
+	print_form("Welcome to the Mortgaging section\n");
+	refresh();	
+	char *props[40];
+	int j = 0;
+	for (int i = 0; i < 40; i++){
+		if (ownership[i] == players[index].player_id){
+			if ((mortgage[i] != mortgage_var)&&(houses[i] == 0)){
+				props[j] = property_names[i];
+				j++;
+			}
+			
+		}
+	}
+	props[j] = "EXIT";
+	j++;
+	props[j] = NULL;
+	main_menu(props, 35, 30);
+	
+	if (highlight - 1 == j - 1){
+		return;
+	}
+	for (int i = 0; i < 40; i++){
+		if (strcmp(props[highlight - 1], property_names[i]) == 0){
+			if (mortgage_var == 1){
+				clear();
+				refresh();
+				handle_payment(3, index, 1, mortgage_value[i], BANK, -1);
+				mortgage[i] = 1;
+				print_form("Property has been mortgaged\n");
+				print_form("Press any key to return");
+				getch();
+				refresh();
+				return;
+				
+			}
+			else if (mortgage_var == 0){
+				int id = players[index].player_id;
+				clear();
+				refresh();
+				handle_payment(3, index, 0, mortgage_value[i] + (10 * mortgage_value[i])/100, BANK, -1);
+				if (id == players[index].player_id){
+					mortgage[i] = 0;
+					
+					print_form("Property has been mortgaged\n");
+					print_form("Press any key to return");
+					getch();
+					refresh();
+				}
+				return;
+				
+			}
+		}
+	}
+	
+}
+void sell_houses(int index){
+	//index also starts from 0
+	clear();
+	refresh();
+	
+	print_form("You have $%f in your wallet\n", players[index].money);
+	print_form("This are the prices for bulding houses/hotels\n");
+	print_form("1. BROWN AND SKY_BLUES COST $50\n");
+	print_form("2. PINKS AND ORANGES COST $100\n");
+	print_form("3. REDS AND YELLOWS COST $150\n");
+	print_form("4. GREENS AND DARK_BLUES COST $200\n");
+	print_form("Press any key to acknowledge\n");
+	getch();
+	clear();
+	refresh();
+	print_form(">> These are the properties that have monopolies\n");
+	refresh();	
+	char *props[40];
+	int j = 0;
+	for (int i = 0; i < 40; i++){
+		if (ownership[i] == players[index].player_id){
+			int ret = monopoly(i);
+			if (ret == 1){
+				props[j] = property_names[i];
+				j++;
+			}
+		}
+	}
+	props[j] = "EXIT";
+	j++;
+	props[j] = NULL;
+	main_menu(props, 35, 30);
+	
+	if (highlight - 1 == j - 1){
+		return;
+	}
+	int id;
+	for (int i = 0; i < 40; i++){
+		if ((strcmp(props[highlight - 1], property_names[i]) == 0)&&(houses[i] > 0)){
+			id = players[index].player_id;	
+			if ((colors[i] == 1)||(colors[i] == 2)){
+				handle_payment(3, index, 1, 25, BANK, -1);
+			}
+			if ((colors[i] == 3)||(colors[i] == 4)){
+				handle_payment(3, index, 1, 50, BANK, -1);
+			}				
+			if ((colors[i] == 5)||(colors[i] == 6)){
+				handle_payment(3, index, 1, 75, BANK, -1);
+			}
+			if ((colors[i] == 7)||(colors[i] == 8)){
+				handle_payment(3, index, 1, 100, BANK, -1);
+			}
+			if (id == players[index].player_id){
+				houses[i]--;
+			}
+			
+		}
+		else if ((strcmp(props[highlight - 1], property_names[i]) == 0)&&(houses[i] == 0)){
+			clear();
+			refresh();
+			print_form("Cannot sell anymore houses. You do not own any houses on this property.\n");
+			print_form("Press any key to continue\n");
+			getch();	
+			return;
+		}	
+		
+	}
+	
+}
+void buy_houses(int index){
+	//index also starts from 0
+	clear();
+	refresh();
+	
+	print_form("You have $%f in your wallet\n", players[index].money);
+	print_form("PLEASE NOTE YOU HAVE TO HAVE ENOUGH MONEY TO PUCHASE A PROPERTY OR YOU WILL HAVE TO FIND A WAY TO GET SOME CASH\n");
+	print_form("This are the prices for bulding houses/hotels\n");
+	print_form("1. BROWN AND SKY_BLUES COST $50\n");
+	print_form("2. PINKS AND ORANGES COST $100\n");
+	print_form("3. REDS AND YELLOWS COST $150\n");
+	print_form("4. GREENS AND DARK_BLUES COST $200\n");
+	print_form("Press any key to acknowledge\n");
+	getch();
+	clear();
+	refresh();
+	print_form(">> These are the properties that have monopolies\n");
+	refresh();	
+	char *props[40];
+	int j = 0;
+	for (int i = 0; i < 40; i++){
+		if (ownership[i] == players[index].player_id){
+			int ret = monopoly(i);
+			if (ret == 1){
+				props[j] = property_names[i];
+				j++;
+			}
+		}
+	}
+	props[j] = "EXIT";
+	j++;
+	props[j] = NULL;
+	if (j != 0){	
+		main_menu(props, 35, 30);
+	}
+	if (j == 0){
+		printw(">> You have no monopolies so you cannot build. Press any button to continue\n");
+		getch();
+		return;
+	}
+	if (highlight - 1 == j - 1){
+		return;
+	}
+	int id;
+	for (int i = 0; i < 40; i++){
+		if ((strcmp(props[highlight - 1], property_names[i]) == 0)&&(houses[i] < 5)){
+			id = players[index].player_id;	
+			if ((colors[i] == 1)||(colors[i] == 2)){
+				handle_payment(1, index, 0, 50, BANK, -1);
+			}
+			if ((colors[i] == 3)||(colors[i] == 4)){
+				handle_payment(1, index, 0, 100, BANK, -1);
+			}				
+			if ((colors[i] == 5)||(colors[i] == 6)){
+				handle_payment(1, index, 0, 150, BANK, -1);
+			}
+			if ((colors[i] == 7)||(colors[i] == 8)){
+				handle_payment(1, index, 0, 200, BANK, -1);
+			}
+			if (id == players[index].player_id){
+				houses[i]++;
+			}
+			
+		}
+		else if ((strcmp(props[highlight - 1], property_names[i]) == 0)&&(houses[i] >= 5)){
+			clear();
+			refresh();
+			print_form("Cannot build anymore houses. You already buit the maximum amount of houses that can be built on this property.\n");
+			print_form("Press any key to continue\n");
+			getch();	
+			return;
+		}	
+		
+	}
+	
+}
+void auction(int index, int property_index){
+	clear();
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	int bid = 1;
+	int fold_list[8] = {0};
+	int winner = 0;
+	int loop = index;
+	for (int i = index; TRUE; i++){
+		clear();
+		refresh();
+		mvprintw(0, (x - 30)/2, "Welcome to the auctioning room\n");
+		print_form("This is player %d\n", players[loop].player_id);
+		char *opt[] = {"Bid",
+			     "Fold",
+			     NULL};
+		main_menu(opt, 7, 20);
+		if (highlight == 1){
+			clear();
+			print_form("You own $%f\n",players[loop].money);
+			print_form("Previous bid was $%d\n", bid); 
+			bid = number_entered(bid + 1, players[loop].money, "Invalid bid, please enter a valid amount\n", "Correct option entered\n", "Please enter your bid: ");
+		}
+		if (highlight == 2){
+			fold_list[loop] = 1;
+		}
+		
+		int track = 0;
+		
+		for (int j = 0; j < num_of_players; j++){
+			if (fold_list[j] == 1){
+				track++;
+			}
+			if (fold_list[j] == 0){
+				winner = j;
+			}
+
+		}
+		if (track == num_of_players - 1){
+		
+			break;
+		}
+		loop++;
+		loop = loop % num_of_players;
+	}
+	clear();
+	print_form("Player %d is the winner of the auction\n", players[winner].player_id);
+	print_form("Press any key to continue\n");
+	getch();
+	handle_payment(2, winner, 0, bid, BANK, property_index);
+}
+void print_props(int size, char color[], int id, char *str){
+	int count = 0;
+	for (int i = 0; i < size; i++){
+		int temp = color[i];
+		if (ownership[temp] == id){
+			if (mortgage[temp] == 1){
+				attron(COLOR_PAIR(1));
+			}
+			print_form("%20s(%d)   ", property_names[temp], houses[temp]);
+			if (mortgage[temp] == 1){
+				attroff(COLOR_PAIR(1));
+			}
+			count++;
+		}
+	}
+	if (count != 0){
+		print_form("-->%s", str);
+		int ret = monopoly(color[0]);
+		if ((ret == 1)||(ret == 5)||(ret == 7)){
+			print_form("%150s", "-->Monopoly");
+		}
+		
+	}
+	print_form("\n");
+	refresh();
+}
+void print_player_info(int index){
+	clear();
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	mvprintw(0, (x - 8)/2, "player %d\n", players[index].player_id);
+	printw("-This players name is %s.\n", players[index].name);
+	printw("-This player is currently on block %d, A.K.A %s.\n", players[index].current_position, property_names[players[index].current_position - 1]);
+	printw("-This player has $%f.\n", players[index].money);
+	if (players[index].in_jail == 1){
+		printw("-This player is currently in jail.\n");
+		printw("-This player has spent %d turns in jail.\n", players[index].time_spent_in_jail);
+	}
+	else{
+		printw("-This player is NOT in jail.\n");
+	}
+	printf("-This player has %d get out of jail free cards.\n", players[index].GOOJFC);
+	int previous = 0;
+	refresh();
+	printw("\n\n-The following lines shows the properties owned by this player, the number of houses each property has is showed inside the parenthesis. 5 houses means the property has an hotel.\n\n");
+	char brown[2] = {1, 3};
+	char airport[4] = {5, 15, 25, 35};
+	char sky_blue[3] = {6, 8, 9};
+	char pink[3] = {11, 13, 14};
+	char utility[2] = {12, 28};
+	char orange[3] = {16, 18, 19};
+	char red[3] = {21, 23, 24};
+	char yellow[3] = {26, 27, 29};
+	char green[3] = {31, 32, 34};
+	char blue[2] = {37, 39}; 
+	print_props(2, brown, players[index].player_id, "BROWN");
+	print_props(4, airport, players[index].player_id, "AIRPORT");
+	print_props(3, sky_blue, players[index].player_id, "SKY BLUE");
+	print_props(3, pink, players[index].player_id, "PINK");
+	print_props(2, utility, players[index].player_id, "UTILITY");
+	print_props(3, orange, players[index].player_id, "ORANGE");
+	print_props(3, red, players[index].player_id, "RED");
+	print_props(3, yellow,players[index].player_id, "YELLOW");
+	print_props(3, green, players[index].player_id, "GREEN");
+	print_props(2, blue,players[index].player_id, "BLUE");
+	print_form("\nPress any key to continue");
+	getch();
+	
+}
+void handle_payment(int action, int index, int pay_to_or_pay_from, int price, int who, int property_index){
 //if action is 1 - pay for rent
 //if action is 2 - buy property from bank
 	clear();
@@ -17,6 +367,9 @@ void handle_payment(int action, int index, int pay_to_or_pay_from, int price, in
 	else{
 		sec = players[who - 1].name;
 	}
+	if ((who != 0)&&(who != 9)){
+		print_form("-This is player %d\n", players[index].player_id);
+	}
 	if (pay_to_or_pay_from == 0){
 		printw("-You are about to make a payment of $%d to %s\n", price, sec);
 	}
@@ -26,11 +379,18 @@ void handle_payment(int action, int index, int pay_to_or_pay_from, int price, in
 	
 	refresh();
 	if (action == 2){
-restart:	refresh();	
-		char *options[] = {"Buy",
-				   "Auction",
-				   NULL};
-		main_menu(options, 15, 50);
+restart:	refresh();
+		if (property_index < 0){	
+			char *options[] = {"Buy",
+					   "Auction",
+					   NULL};
+			main_menu(options, 15, 50);
+		}
+		else{	
+			char *options[] = {"Buy",
+					   NULL};
+			main_menu(options, 15, 50);
+		}
 		if (highlight == 1){
 			if (players[index].money < price){
 				clear();
@@ -44,14 +404,15 @@ restart:	refresh();
 					     NULL};
 				main_menu(option, 15, 50);
 				if (highlight == 1){
-					//auction
+					auction(index, players[index].current_position);
+					return;
 				}
 				if (highlight == 2){
-					//mortgage property 
+					mortgage_property(index, 1);
 					goto restart;
 				}
 				if (highlight == 3){
-					//sell houses
+					sell_houses(index);
 					goto restart;
 				}
 				if (highlight == 4){
@@ -60,19 +421,116 @@ restart:	refresh();
 				}
 			}
 			else{
+				players[index].money-=price;
 				clear();
 				printw("You have successfully made the payment\n");
-				printw("You now have $%d in your wallet\n", players[index].money);
+				printw("You now have $%f in your wallet\n", players[index].money);
 				printw("Press any key to continue");
-				
+				if (property_index < 0){
+					ownership[players[index].current_position - 1] = players[index].player_id;
+				}
+				else{
+					ownership[property_index] = players[index].player_id;
+				}
 				refresh();
 				getch();
-				players[index].money-=price;
+
 			}
 		}
+		else if (highlight == 2){
+			auction(index, players[index].current_position);
+			return;
+		}
 	}
-
+	if (action == 1){
+redo:		refresh();
+		int amt = 0;
+		if (who == ALL){
+			amt = price * (num_of_players - 1);
+		}
+		else{
+			amt = price;
+		}
+		char *options[] = {"Pay rent",
+				   "Mortgage",
+				   "Sell houses/hotel",
+				   "Trade",
+				   "Declare bankruptcy",
+				   NULL};
+		main_menu(options, 15, 50);
+		if (highlight == 1){
+			clear();
+			if (players[index].money >= amt){
+				players[index].money-=amt;
+				if ((who != ALL)&&(who != BANK)){
+					players[who - 1].money+=amt;
+					print_form("-you have successfully paid %s\n", players[who - 1].name);
+					print_form("Press any key to continue\n");
+					getch();
+				}
+				if (who == BANK){
+					print_form("-you have successfully paid the bank\n");
+					print_form("Press any key to continue\n");
+					getch();
+				} 
+				if (who == ALL){
+					for (int i = 0; i < num_of_players; i++){
+						if (i != index){
+							players[i].money+=price;
+						}
+					}
+					print_form("-you have successfully paid all players\n");
+					print_form("Press any key to continue\n");
+					getch();
+				} 
 		
+			}
+
+			else{ 
+				print_form("You do not have enough money to pay the rent, please select an option\n");
+				goto redo;
+			}	
+		}
+		if (highlight == 2){
+			mortgage_property(index, 1);
+			goto redo;
+		}
+		if (highlight == 3){
+			sell_houses(index);
+			goto redo;
+		}
+		if (highlight == 4){
+			//trade
+			goto redo;
+		}
+		if (highlight == 5){
+			declare_bankruptcy(index);
+			return;
+		}
+	}
+	if (pay_to_or_pay_from == 1){
+		//collecting
+		if (who == ALL){
+			for (int i = 0; i < num_of_players; i++){
+				if (i != index){
+					clear();
+					print_form("Every player has to pay player %d $%d, press any key to continue\n", players[index].player_id, price);
+					getch();
+					handle_payment(1, i, 0, price, players[index].player_id, -1);
+				}
+			}
+		}
+		if (who == BANK){
+			players[index].money+=price;
+			print_form("BANK has paid player %d $%d, press any key to continue\n",players[index].player_id, price);			
+			getch();
+		}
+		else{
+			print_form("Player %d has to pay player %d $%d, press any key to continue\n", who, players[index].player_id, price);
+			getch();
+			handle_payment(1, who - 1, 0, price, players[index].player_id, -1);
+		}
+	}
 
 //print in pay and print price
 //show menu
@@ -495,7 +953,7 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		int homes = 0;
 		int hotels = 0;
 		for (int i = 0; i < 40; i++){
-			if (ownership[i] == index + 1){
+			if (ownership[i] == players[index].player_id){
 				if (houses[i] < 5){
 					homes+=houses[i];
 				}
@@ -686,7 +1144,7 @@ void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int
 		int homes = 0;
 		int hotels = 0;
 		for (int i = 0; i < 40; i++){
-			if (ownership[i] == index + 1){
+			if (ownership[i] == players[index].player_id){
 				if (houses[i] < 5){
 					homes+=houses[i];
 				}
@@ -831,7 +1289,17 @@ void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int
 			print_form("YOU ENTERED INCOME TAX\n");
 			print_form("Press any key to proceed");
 			getch();
-			//PROMPT THE USER TO ENTER EITHER 10% OR 200
+			char *opt[] = {"Pay 10%",
+				     "Pay $200",
+				     NULL};
+			main_menu(opt, 15, 50);
+			if (highlight == 1){
+			}
+			if (highlight == 2){
+				*pay_to_or_pay_from = 0;
+				*price 		    = 200;
+				*who		    = BANK;
+			}
 			//handle payment
 			return;
 		}
@@ -1014,8 +1482,8 @@ skip:	if (highlight == 1){
 	//GAME BEGIN
 	srand(time(NULL));
 	while(1){
-		handle_payment(2, 0, 0, 10000, BANK);
-		/*int roll_time = 0;
+		
+		int roll_time = 0;
 before_roll:	refresh();
 		int center_loc_x = (DASH - 8)/2;
 		clear();
@@ -1026,25 +1494,73 @@ before_roll:	refresh();
 		char *opt[] = {"1. Roll dice",
 			     "2. Trade with a player",
 			     "3. Mortgage property",
-			     "4. View player information",
-			     "5. View other player information",
-			     "6. Build house",
-			     "7. Build hotel",
+			     "4. Unmortgaged property",
+			     "5. View player information",
+			     "6. Sell houses/hotels",
+			     "7. Build house/hotels",
 			     "8. Declare bankruptcy",
 			     NULL};
 		main_menu(opt, 15, 50);
 		if (highlight == 1){
-			clear();
-			int a, b, pay_to_or_pay_from, price, who;
+			//clear();
+			int a, b;
 			roll_dice(&a, &b);
-			movement(curr_player, a + b, &pay_to_or_pay_from, &price, &who);
+			//players[curr_player].current_position = a + b;
+			//auction(curr_player, 5);
+
+			//handle_payment(2, curr_player, 0, 10, BANK, -1);
+			//int a, b, pay_to_or_pay_from, price, who;
+			//roll_dice(&a, &b);
+			//movement(curr_player, a + b, &pay_to_or_pay_from, &price, &who);
+		}
+		else if (highlight == 8){
+			declare_bankruptcy(curr_player);
+			if (num_of_players != 1){
+				curr_player--;
+			}
+
+		}
+		else if (highlight == 3){
+			mortgage_property(curr_player, 1);
+			goto before_roll;
+		}
+		else if (highlight == 4){
+			mortgage_property(curr_player, 0);
+			goto before_roll;
+		}
+		else if (highlight == 6){
+			clear();
+			sell_houses(curr_player);
+			goto before_roll;
+		}
+		else if (highlight == 7){
+			ownership[1] = players[curr_player].player_id;
+			ownership[3] = players[curr_player].player_id;
+			clear();
+			buy_houses(curr_player);
+			goto before_roll;
+		}
+		else if (highlight == 5){
+			print_player_info(curr_player);
+			goto before_roll;
 		}
 					
 		//functionalities
 		clear();
 		refresh();
+		if (num_of_players == 1){
+			clear();
+			refresh();
+			print_form("Congratulation player %d, you have won the game\n", players[curr_player].player_id);
+			print_form("Press any button to continue\n");
+			getch();
+			refresh();
+			break;
+		}
+		curr_player++;
 		startup_board();
-		curr_player++;*/
+		
+
 		//print the board after rolling
 	}
 	
