@@ -210,4 +210,8 @@ int load_file(char *filename);
 
 void roll_dice(int *dice_one, int *dice_two);
 
+int monopoly(int pos);
 
+void handle_payment(int action, int index, int pay_to_or_pay_from, int price, int who, int property_index);
+
+void auction(int index, int property_index);
