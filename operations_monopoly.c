@@ -1,6 +1,245 @@
 #include "new_monopoly.c"
 //HUGE FIX REQUIRED-CHANGE INDEX + 1 TO players[index].player_id - FIXED
 //ANOTHER HUGE ISSUE, SAVE FILE LOADS INCORRECT PROPERTIES FOR PLAYERS - FIXED
+int current_players_assets(int index, char *array[], char picked[], int *ret,float *money, int *card){
+	clear();
+	refresh();
+	print_form("This are your assets, %s\n", players[index].name);
+	
+	//properties w/o houses
+		//GOOJFC
+		//money
+	*card = 0;
+	*money = 0;
+	
+	int k = 0;
+	int m = 0;
+	int n = 0;
+	while (k < 40){
+		if ((ownership[k] == players[index].player_id)&&(houses[k] == 0)){
+			array[m] = property_names[k];
+			m++;
+		}
+		k++;
+	}
+	n = m; 		//now n contains the number of properties
+	
+	if (n > 0){
+		memset(picked, 0, n);
+	}
+	if (players[index].GOOJFC > 0){
+		array[m] = "GET OUT OF JAIL CARD";
+		m++;
+	}
+	array[m] = "MONEY";
+	m++;
+	array[m] = "DONE";
+	m++;
+	array[m] = "EXIT";
+	m++;
+	array[m] = NULL;
+redo:	main_menu(array, 20, 35);
+	if ((n > 0) && (highlight <= n)){
+		if (picked[highlight - 1] == 0){
+			picked[highlight - 1] = 1;
+			clear();
+			refresh();
+			print_form("You have added %s to the cart\n", array[highlight - 1]);
+			print_form("Press any key to continue\n");
+			getch();
+			refresh();
+			clear();
+			refresh();
+			goto redo;			
+		}
+		else{
+			picked[highlight - 1] = 0;
+			clear();
+			refresh();
+			print_form("You have removed %s from the cart\n", array[highlight - 1]);
+			print_form("Press any key to continue\n");
+			getch();
+			refresh();
+			clear();
+			refresh();
+			goto redo;
+		}
+	}
+	else if ((n + 1 == highlight)&&(players[index].GOOJFC > 0)){
+		clear();
+		refresh();
+		*card = number_entered(0, players[index].GOOJFC, "Number entered is invalid\n", "Correct option entered\n", "Please enter the amount of Get out of jail free cards you want: ");
+		clear();
+		refresh();
+		print_form("You have added %d Get out of jail cards to the cart\n", *card);
+		print_form("Press any key to continue\n");
+		getch();
+		refresh();
+		clear();
+		refresh();
+		goto redo;
+	}
+	int p = n;
+	if (players[index].GOOJFC > 0){
+		p = n+1;
+	}
+	else if (p + 1 == highlight){
+		clear();
+		refresh();
+		*money = number_entered(0, players[index].money, "Number entered is invalid\n", "Correct option entered\n", "Please enter the amount of money you want: ");
+		clear();
+		refresh();
+		print_form("You have added $%f cash to the cart\n", *money);
+		print_form("Press any key to continue\n");
+		getch();
+		refresh();
+		clear();
+		refresh();
+		goto redo;
+	}
+	else if (p + 2 == highlight){
+		clear();
+		*ret = n;
+		return 1;		//done
+	}
+	else if (p + 3 == highlight){
+		clear();
+		return 0;		//exit
+	}	
+			
+	
+	
+}
+void trade_with_player(int index){
+	clear();
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	mvprintw(0, (x - 30)/2, "Welcome to the Trading section\n");
+	refresh();
+	print_form(">> Who would you like to trade with?\n");
+	char *opt[8];
+	int a = 0;
+	int i = 0;
+	while (a < num_of_players){
+		if (a != index){
+			opt[i] = players[a].name;
+			i++;
+		}
+		a++;
+	}
+	opt[i] = "EXIT";
+	i++;
+	opt[i] = NULL;
+	if (i != 0){	
+		main_menu(opt, 35, 30);
+	}
+	/*Very unlikely*/
+	if (i == 0){
+		printw("There are no other players\n");
+		getch();
+		return;
+	}
+
+	if (highlight - 1 == i - 1){
+		return;
+	}
+	int j = 0;
+	char *options_give[40];
+	char picked_give[40];
+	int size_picked_give;
+	float money_give;
+	int card_give;
+
+	char *options_take[40];
+	char picked_take[40];
+	int size_picked_take;
+	float money_take;
+	int card_take;
+
+	int who = 0;
+	while (j < num_of_players){
+		if (strcmp(players[j].name,opt[highlight - 1])==0){
+			//player to be traded with found
+			int ret = current_players_assets(index, options_give, picked_give, &size_picked_give,&money_give, &card_give);
+			if (ret == 0){
+				return;
+			}
+			ret = current_players_assets(j, options_take, picked_take, &size_picked_take,&money_take, &card_take);
+			if (ret == 0){
+				return;
+			}
+			who = j;
+			
+		
+		}
+		j++;
+	}
+	clear();
+	attron(A_UNDERLINE);
+	print_form("The below shows the trade being initiated\n");
+	attroff(A_UNDERLINE);
+	print_form("Please press any key to continue\n");
+	
+	for (int i =2; i < y; i++){
+		mvprintw(i, x/2, "|");
+	}
+	//on left side
+	mvprintw(2, 0, "What %s is offering %s", players[index].name, players[who].name);
+	mvprintw(2, (x+2)/2,"What %s wants from %s", players[index].name, players[who].name);
+ 	
+	int begin = 4;
+	int begin_2 = 4;
+	for (int i = 0; i < 40; i++){
+		if ((picked_give[i] == 1)&&(i < size_picked_give)){		
+			mvprintw(begin, 0, "Property --> %s",options_give[i]);
+			begin++;
+		}
+		if ((picked_take[i] == 1)&&(i < size_picked_take)){		
+			mvprintw(begin_2, (x+2)/2, "Property --> %s",options_take[i]);
+			begin_2++;
+		}
+	}
+	mvprintw(begin, 0, "Money --> $%f", money_give);
+	mvprintw(begin_2, (x+2)/2,"Money --> $%f", money_take);	
+	mvprintw(begin+1, 0, "Get out of jail free card --> %d", card_give);
+	mvprintw(begin_2 + 1, (x+2)/2,"Get out of jail free card --> %d", card_take);
+	getch();
+	clear();
+	refresh();
+	print_form("Would you like to accept this offer, %s?", players[who].name);	 
+	char * options[] = {"ACCEPT",
+			"DECLINE",
+			NULL};
+	main_menu(options, 10, 25);
+	if (highlight == 1){
+		for (int i = 0; i < 40; i++){
+			if ((picked_give[i] == 1)&&(i < size_picked_give)){		
+				for (int j = 0; j < 40; j++){
+					if (strcmp(property_names[j], options_give[i])==0){
+						ownership[j] = players[who].player_id;
+					}
+				}				
+
+			}
+			if ((picked_take[i] == 1)&&(i < size_picked_take)){				
+				for (int j = 0; j < 40; j++){
+					if (strcmp(property_names[j], options_take[i])==0){
+						ownership[j] = players[index].player_id;
+					}
+				}				
+
+			}
+		}
+		players[index].GOOJFC+=card_take;
+		players[who].GOOJFC+=card_give;
+		handle_payment(3, index, 1, money_take, players[who].player_id,-1);	
+		handle_payment(3, who, 1, money_give, players[index].player_id,-1);
+	}
+	else if (highlight == 2){
+		return;
+	}	
+	return;
+}
 void declare_bankruptcy(int index){
 	//remove all houses the player owned and also unmortgage and sell the properties to other players
 	int temp = players[index].player_id;
@@ -416,7 +655,7 @@ restart:	refresh();
 					goto restart;
 				}
 				if (highlight == 4){
-					//trade
+					trade_with_player(index);
 					goto restart;
 				}
 			}
@@ -500,7 +739,7 @@ redo:		refresh();
 			goto redo;
 		}
 		if (highlight == 4){
-			//trade
+			trade_with_player(index);
 			goto redo;
 		}
 		if (highlight == 5){
@@ -1544,7 +1783,10 @@ before_roll:	refresh();
 			print_player_info(curr_player);
 			goto before_roll;
 		}
-					
+		else if(highlight == 2){
+			trade_with_player(curr_player);
+			goto before_roll;
+		}		
 		//functionalities
 		clear();
 		refresh();
