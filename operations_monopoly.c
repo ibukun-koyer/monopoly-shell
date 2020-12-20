@@ -1,6 +1,21 @@
 #include "new_monopoly.c"
 //HUGE FIX REQUIRED-CHANGE INDEX + 1 TO players[index].player_id - FIXED
 //ANOTHER HUGE ISSUE, SAVE FILE LOADS INCORRECT PROPERTIES FOR PLAYERS - FIXED
+//NEW PROBLEM, PUT THE GETCH BEFORE GO - FIXED
+//ALSO CLEAR THE MORTGAGE IN HANDLE PAYMENT - FIXED
+int namecmp(char src[], char dest[]){
+	int i = 0;
+	while (i < 6){
+		if ((src[i] == '\0')&&(dest[i] == '\0')){
+			return 0;
+		}
+		if (src[i] != dest[i]){
+			return 1;
+		}
+		i++;
+	}
+	return 0;
+}
 int current_players_assets(int index, char *array[], char picked[], int *ret,float *money, int *card){
 	clear();
 	refresh();
@@ -148,17 +163,18 @@ void trade_with_player(int index){
 	char picked_give[40];
 	int size_picked_give;
 	float money_give;
-	int card_give;
+	int card_give = 0;
 
 	char *options_take[40];
 	char picked_take[40];
 	int size_picked_take;
 	float money_take;
-	int card_take;
+	int card_take = 0;
 
 	int who = 0;
+	int temp = highlight;
 	while (j < num_of_players){
-		if (strcmp(players[j].name,opt[highlight - 1])==0){
+		if (namecmp(players[j].name,opt[temp - 1])==0){
 			//player to be traded with found
 			int ret = current_players_assets(index, options_give, picked_give, &size_picked_give,&money_give, &card_give);
 			if (ret == 0){
@@ -181,7 +197,7 @@ void trade_with_player(int index){
 	print_form("Please press any key to continue\n");
 	
 	for (int i =2; i < y; i++){
-		mvprintw(i, x/2, "|");
+		mvaddch(i, x/2, ACS_VLINE);
 	}
 	//on left side
 	mvprintw(2, 0, "What %s is offering %s", players[index].name, players[who].name);
@@ -206,7 +222,7 @@ void trade_with_player(int index){
 	getch();
 	clear();
 	refresh();
-	print_form("Would you like to accept this offer, %s?", players[who].name);	 
+	print_form("Would you like to accept this offer, %s?\n", players[who].name);	 
 	char * options[] = {"ACCEPT",
 			"DECLINE",
 			NULL};
@@ -257,6 +273,13 @@ void declare_bankruptcy(int index){
 		}
 	}
 	num_of_players-=1;
+	clear();
+	refresh();
+	print_form("player %d declared bankruptcy, so we are auctioning off their property WITHOUT the houses they may have had.\nPress any key to continue\n", temp);
+	getch();
+	if (num_of_players == 1){
+		return;
+	}
 	for (int i = 0; i < 40; i++){
 		if (ownership[i] == temp){
 			auction(0, i);
@@ -481,6 +504,7 @@ void auction(int index, int property_index){
 		refresh();
 		mvprintw(0, (x - 30)/2, "Welcome to the auctioning room\n");
 		print_form("This is player %d\n", players[loop].player_id);
+		print_form("The current property on bid is %s\n", property_names[property_index]);
 		char *opt[] = {"Bid",
 			     "Fold",
 			     NULL};
@@ -507,7 +531,6 @@ void auction(int index, int property_index){
 
 		}
 		if (track == num_of_players - 1){
-		
 			break;
 		}
 		loop++;
@@ -538,11 +561,14 @@ void print_props(int size, char color[], int id, char *str){
 		print_form("-->%s", str);
 		int ret = monopoly(color[0]);
 		if ((ret == 1)||(ret == 5)||(ret == 7)){
-			print_form("%150s", "-->Monopoly");
+			attron(COLOR_PAIR(2));
+			print_form("%s", "-->Monopoly");
+			attroff(COLOR_PAIR(2));
 		}
+		print_form("\n");
 		
 	}
-	print_form("\n");
+	//print_form("\n");
 	refresh();
 }
 void print_player_info(int index){
@@ -560,7 +586,7 @@ void print_player_info(int index){
 	else{
 		printw("-This player is NOT in jail.\n");
 	}
-	printf("-This player has %d get out of jail free cards.\n", players[index].GOOJFC);
+	printw("-This player has %d get out of jail free cards.\n", players[index].GOOJFC);
 	int previous = 0;
 	refresh();
 	printw("\n\n-The following lines shows the properties owned by this player, the number of houses each property has is showed inside the parenthesis. 5 houses means the property has an hotel.\n\n");
@@ -591,6 +617,9 @@ void print_player_info(int index){
 void handle_payment(int action, int index, int pay_to_or_pay_from, int price, int who, int property_index){
 //if action is 1 - pay for rent
 //if action is 2 - buy property from bank
+	if(price == 0){	
+		return;
+	}
 	clear();
 	int y, x;
 	getmaxyx(stdscr, y, x);
@@ -614,6 +643,14 @@ void handle_payment(int action, int index, int pay_to_or_pay_from, int price, in
 	}
 	if (pay_to_or_pay_from == 1){
 		printw("-You are about to receive a payment of $%d from %s\n", price, sec);
+	}
+	if (pay_to_or_pay_from == 2){
+		if (property_index < 0){
+			printw("You are about to buy a property called %s from the BANK for $%d\n", property_names[players[index].current_position-1], price);
+		}
+		else{
+			printw("You are about to buy a property called %s from the BANK for $%d\n", property_names[property_index], price);
+		}
 	}
 	
 	refresh();
@@ -643,18 +680,26 @@ restart:	refresh();
 					     NULL};
 				main_menu(option, 15, 50);
 				if (highlight == 1){
-					auction(index, players[index].current_position);
+					clear();
+					refresh();
+					auction(index, players[index].current_position - 1);
 					return;
 				}
 				if (highlight == 2){
+					clear();
+					refresh();
 					mortgage_property(index, 1);
 					goto restart;
 				}
 				if (highlight == 3){
+					clear();
+					refresh();
 					sell_houses(index);
 					goto restart;
 				}
 				if (highlight == 4){
+					clear();
+					refresh();
 					trade_with_player(index);
 					goto restart;
 				}
@@ -677,7 +722,7 @@ restart:	refresh();
 			}
 		}
 		else if (highlight == 2){
-			auction(index, players[index].current_position);
+			auction(index, players[index].current_position - 1);
 			return;
 		}
 	}
@@ -731,18 +776,26 @@ redo:		refresh();
 			}	
 		}
 		if (highlight == 2){
+			clear();
+			refresh();
 			mortgage_property(index, 1);
 			goto redo;
 		}
 		if (highlight == 3){
+			clear();
+			refresh();
 			sell_houses(index);
 			goto redo;
 		}
 		if (highlight == 4){
+			clear();
+			refresh();
 			trade_with_player(index);
 			goto redo;
 		}
 		if (highlight == 5){
+			clear();
+			refresh();
 			declare_bankruptcy(index);
 			return;
 		}
@@ -759,7 +812,7 @@ redo:		refresh();
 				}
 			}
 		}
-		if (who == BANK){
+		else if (who == BANK){
 			players[index].money+=price;
 			print_form("BANK has paid player %d $%d, press any key to continue\n",players[index].player_id, price);			
 			getch();
@@ -796,7 +849,7 @@ redo:		refresh();
 
 }
 int monopoly(int pos){
-//if color is brown, color is 1
+//if color is brown,color is 1
 //if color is sky blue, color is 2
 //if color is Pink, color is 3
 //if color is orange, color is 4,
@@ -902,10 +955,11 @@ void property(int dice, int pos, int index, int *pay_to_or_pay_from, int *price,
 	int ME = BANK;
 	//pos is assumed to be position - 1;
 	//index is also assumed to be inde - 1;
+	//2 means buy, pay_to_or_pay_from
 	int id = players[index].player_id;
 	if (ownership[pos] == 0){
 		
-		*pay_to_or_pay_from = 0;
+		*pay_to_or_pay_from = 2;
 		*price 		    = prices[pos];
 		*who		    = BANK;
 		return;
@@ -1005,6 +1059,8 @@ void handle_GO(int index, int dice, int *pay_to_or_pay_from, int *price, int *wh
 	}	
 	//print_form("the current position is %d\n", players[index].current_position);
 	if (pos > players[index].current_position){
+		print_form("You have passed GO, Press any key to continue\n");
+		getch();
 		//passed go
 		*pay_to_or_pay_from = 1;
 		*price 		    = 200;
@@ -1046,13 +1102,14 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 	if (chance_index == 0){
 		//advance to go
 		print_form("%s\n", community_chest[chance_index]);
-		int GO = 41 - players[index].current_position; 		
-		handle_GO(index, GO, pay_to_or_pay_from, price, who);
-		
+		int GO = 41 - players[index].current_position; 	
 		print_form("Press any key to proceed");
 		
-		getch();
-		//handle payment
+		getch();	
+		handle_GO(index, GO, pay_to_or_pay_from, price, who);
+		
+
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 1){
@@ -1062,7 +1119,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 2){
@@ -1072,7 +1132,7 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 3){
@@ -1082,26 +1142,27 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 4){
 		print_form("%s\n", community_chest[chance_index]);
 		players[index].GOOJFC++;
-		handle_GO(index, 0, pay_to_or_pay_from, price, who);
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		handle_GO(index, 0, pay_to_or_pay_from, price, who);
+
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;	
 	}
 	if (chance_index == 5){
 		print_form("%s\n", community_chest[chance_index]);
 		players[index].current_position = 11;
 		players[index].in_jail		 = 1;
-		handle_GO(index, 0, pay_to_or_pay_from, price, who);
-		//handle payment
 		print_form("Press any key to proceed");
 		getch();
+		handle_GO(index, 0, pay_to_or_pay_from, price, who);
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		//handle payment
 		return;
 	}
@@ -1112,7 +1173,7 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = ALL;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 7){
@@ -1122,7 +1183,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 8){
@@ -1132,7 +1196,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 9){
@@ -1142,7 +1209,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = ALL;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 10){
@@ -1152,7 +1222,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 11){
@@ -1162,7 +1235,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 12){
@@ -1172,7 +1248,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 13){
@@ -1182,7 +1261,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 14){
@@ -1204,7 +1286,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*price 		     = (homes * 40) + (hotels * 115);
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 15){
@@ -1214,7 +1299,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}	
 	if (chance_index == 16){
@@ -1224,7 +1312,10 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		*who		    = BANK;
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 }
@@ -1241,59 +1332,83 @@ void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int
 	if (chance_index == 0){
 		//advance to go
 		print_form("%s\n", chance[chance_index]);
-		int GO = 41 - players[index].current_position; 		
-		handle_GO(index, GO, pay_to_or_pay_from, price, who);
-		
 		print_form("Press any key to proceed");
 		
 		getch();
-		//handle payment
+		int GO = 41 - players[index].current_position; 		
+		handle_GO(index, GO, pay_to_or_pay_from, price, who);
+		
+
+		//3 means use pay_to_pay_from(1)
+		//2 means buy property
+		//1 means pay rent
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 1){
 		//go to trafalgar square
 		print_form("%s\n", chance[chance_index]);
+		
+		print_form("Press any key to proceed");
+		getch();
 		if (players[index].current_position <= 25){
 			int GO = 25 - players[index].current_position;	
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
-			//handle payment
+			//3 means use pay_to_pay_from(1)
+			//2 means buy property
+			//1 means pay rent
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		}
 		else{
 			int GO = 41 - players[index].current_position + 24;
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
-			//handle payment
+			//3 means use pay_to_pay_from(1)
+			//2 means buy property
+			//1 means pay rent
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		}
 		property(dice,24, index, pay_to_or_pay_from, price, who);
-		
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		if (*pay_to_or_pay_from == 2){
+			handle_payment(2, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
+		else{
+			handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
 		return;
 	}
 	if (chance_index == 2){
 		//advance to pall mall, if you pass go, collect 200
 		print_form("%s\n", chance[chance_index]);
+		
+		print_form("Press any key to proceed");
+		getch();
 		if (players[index].current_position < 12){
 			int GO = 12 - players[index].current_position;	
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
-			//handle payment
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		}
 		else{
 			int GO = 41 - players[index].current_position + 11;
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
-			//handle payment
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		}
 		property(dice,11, index, pay_to_or_pay_from, price, who);
-		
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		if (*pay_to_or_pay_from == 2){
+			handle_payment(2, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
+		else{
+			handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
 		return;
 	}
 	//find nearest neigbor, 12 or 28
 	if ((chance_index == 3)||(chance_index == 4)){
 		//go to nearest utility, moves forward only. pay dice * 10
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		int closest;
 		if (chance_index == 3){
 			closest = is_closest(players[index].current_position, 13, 29, -1, -1);
@@ -1305,13 +1420,13 @@ void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int
 		if (players[index].current_position < closest){
 			int GO = closest - players[index].current_position;	
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
-			//handle payment
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		}
 		else{
 			int GO = 41 - players[index].current_position + closest - 1;
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
 			
-			//handle payment
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 			
 		}
 		
@@ -1325,32 +1440,40 @@ void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int
 			}
 		}
 		
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		if (*pay_to_or_pay_from == 2){
+			handle_payment(2, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
+		else{
+			handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
 		return;
 	}
 	if (chance_index == 5){
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		*pay_to_or_pay_from = 1;
 		*price		    = 50;
 		*who		    = BANK;
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 6){
 		print_form("%s\n", chance[chance_index]);
-		players[index].GOOJFC++;
-		handle_GO(index, 0, pay_to_or_pay_from, price, who);
 		print_form("Press any key to proceed");
 		getch();
-		//handle payment
+		players[index].GOOJFC++;
+		handle_GO(index, 0, pay_to_or_pay_from, price, who);
+
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;	
 	}
 	if (chance_index == 7){
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		if ((players[index].current_position - 3) > 0){
 			players[index].current_position-=3;
 		}
@@ -1358,26 +1481,28 @@ void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int
 			players[index].current_position = 40 + (players[index].current_position - 3);
 		}
 		handle_GO(index, 0, pay_to_or_pay_from, price, who);
-		//handle payment
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		property(dice,players[index].current_position - 1, index, pay_to_or_pay_from, price, who);
-		print_form("Press any key to proceed");
-		getch();
+
 		//handle payment
 		return;	
 	}
 	if (chance_index == 8){
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		players[index].current_position = 11;
 		players[index].in_jail		 = 1;
 		handle_GO(index, 0, pay_to_or_pay_from, price, who);
-		//handle payment
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
+
+		
 		return;
 	}
 	if (chance_index == 9){
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		*pay_to_or_pay_from = 0;
 		*who		    = BANK;
 		int homes = 0;
@@ -1393,85 +1518,101 @@ void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int
 			}
 		}
 		*price 		     = (homes * 25) + (hotels * 100);
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 10){	
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		*pay_to_or_pay_from = 0;
 		*price		    = 15;
 		*who		    = BANK;
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 11){
 		//take a trip to kings cross station
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		if (players[index].current_position < 6){
 			int GO = 6 - players[index].current_position;	
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
-			//handle payment
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		}
 		else{
 			int GO = 41 - players[index].current_position + 5;
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
-			//handle payment
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		}
 		property(dice,5, index, pay_to_or_pay_from, price, who);
 		
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		if (*pay_to_or_pay_from == 2){
+			handle_payment(2, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
+		else{
+			handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
 		return;
 	}		
 	if (chance_index == 12){
 		//take a trip to kings cross station
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		if (players[index].current_position < 40){
 			int GO = 40 - players[index].current_position;	
 			handle_GO(index, GO, pay_to_or_pay_from, price, who);
-			//handle payment
+			handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		}
 		if (colors[players[index].current_position - 1] != 0){
 			property(dice,39, index, pay_to_or_pay_from, price, who);
+			if (*pay_to_or_pay_from == 2){
+				handle_payment(2, index, *pay_to_or_pay_from, *price, *who, -1);
+			}
+			else{
+				handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+			}
 		}
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+
 		return;
 	}	
 	if (chance_index == 13){	
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		*pay_to_or_pay_from = 0;
 		*price		    = 50;
 		*who		    = ALL;
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 14){	
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		*pay_to_or_pay_from = 1;
 		*price		    = 150;
 		*who		    = BANK;
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 	if (chance_index == 15){	
 		print_form("%s\n", chance[chance_index]);
+		print_form("Press any key to proceed");
+		getch();
 		*pay_to_or_pay_from = 1;
 		*price		    = 100;
 		*who		    = BANK;
-		print_form("Press any key to proceed");
-		getch();
-		//handle payment
+
+		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 		return;
 	}
 		
@@ -1486,7 +1627,7 @@ void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int
 	//index also must be 0
 	
 	handle_GO(index, amt_moved, pay_to_or_pay_from, price, who);
-	//handle payment
+	handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
 	print_form("You are at location %d\n", players[index].current_position);
 	int id = players[index].player_id;
 	int pos = players[index].current_position - 1;
@@ -1513,7 +1654,7 @@ void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int
 			*who		    = BANK;
 			print_form("Press any key to proceed");
 			getch();
-			//handle payment
+			handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 			return;
 		}
 		if (strcmp(property_names[pos], "GO TO JAIL") == 0){
@@ -1533,19 +1674,51 @@ void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int
 				     NULL};
 			main_menu(opt, 15, 50);
 			if (highlight == 1){
+				float total_asset = players[index].money;
+				for (int i = 0; i < 40; i++){
+					if (ownership[i] == players[index].player_id){
+						if (mortgage[i] == 1){							total_asset+=mortgage_value[i];
+						}
+						else if(mortgage[i] == 0){
+							total_asset+=prices[i];
+						}
+						if ((colors[i] == 1)||(colors[i] == 2)){
+							total_asset = total_asset + (houses[i] * 50);
+						}
+						if ((colors[i] == 3)||(colors[i] == 4)){
+							total_asset = total_asset + (houses[i] * 100);
+						}				
+						if ((colors[i] == 5)||(colors[i] == 6)){
+							total_asset = total_asset + (houses[i] * 150);
+						}
+						if ((colors[i] == 7)||(colors[i] == 8)){
+							total_asset = total_asset + (houses[i] * 200);
+						}
+					}
+				}
+				*pay_to_or_pay_from = 0;
+				*price = (10 * total_asset)/100;
+				*who = BANK;
+				
 			}
 			if (highlight == 2){
 				*pay_to_or_pay_from = 0;
 				*price 		    = 200;
 				*who		    = BANK;
 			}
-			//handle payment
+			handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
 			return;
 		}
 		print_form("YOU ENTERED %s\n", property_names[pos]);
 		print_form("Press any key to proceed");
 		getch();
 		property(amt_moved,pos, index, pay_to_or_pay_from, price, who);
+		if (*pay_to_or_pay_from == 2){
+			handle_payment(2, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
+		else{
+			handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
 		return;
 		
 	}
@@ -1688,11 +1861,16 @@ again:
 	fclose(fp);
 	//done reading file names
 	//if the user pressed enter while highlight was 1, start new game
+	int here = 0; 
+	//here is 0 - start new game
+	//here is 1 - menu load
 skip:	if (highlight == 1){
+
 		start_new_game();
 	}
 	
-	if (highlight == 2){
+	else if (highlight == 2){
+		here = 1;
 		menu_save(0);
 		
 		
@@ -1716,8 +1894,19 @@ skip:	if (highlight == 1){
 	clear();
 	refresh();
 	//draw up board, working on this function atm
-	startup_board();
-
+	if (here == 0){
+		startup_board(curr_player, players[curr_player].current_position, 0);
+	}
+	else{
+		int val = 0;
+		if (curr_player == 0){	
+			val = 0;
+		}
+		else{
+			val = curr_player - 1;
+		}
+		startup_board(val, players[val].current_position, 0);
+	}
 	//GAME BEGIN
 	srand(time(NULL));
 	while(1){
@@ -1728,7 +1917,7 @@ before_roll:	refresh();
 		clear();
 		curr_player = curr_player % num_of_players;
 		int player_id = players[curr_player].player_id;
-		mvprintw(0, center_loc_x,"Player %d: \n", player_id);
+		mvprintw(0, center_loc_x,"Player %d, %s: \n", player_id, players[curr_player].name);
 		refresh();
 		char *opt[] = {"1. Roll dice",
 			     "2. Trade with a player",
@@ -1740,10 +1929,22 @@ before_roll:	refresh();
 			     "8. Declare bankruptcy",
 			     NULL};
 		main_menu(opt, 15, 50);
+		int a, b;
+		int prev = players[curr_player].current_position;
 		if (highlight == 1){
 			//clear();
-			int a, b;
+			
 			roll_dice(&a, &b);
+			clear();
+			refresh();
+			print_form("Your first dice is %d, and your second is %d\n", a, b);
+			print_form("You have a total of %d\n", a+b);
+			print_form("Please press any key to continue");
+			getch();
+			int s,v,w;
+			clear();
+			refresh();
+			movement(curr_player, a+b, &s, &v, &w);
 			//players[curr_player].current_position = a + b;
 			//auction(curr_player, 5);
 
@@ -1773,8 +1974,6 @@ before_roll:	refresh();
 			goto before_roll;
 		}
 		else if (highlight == 7){
-			ownership[1] = players[curr_player].player_id;
-			ownership[3] = players[curr_player].player_id;
 			clear();
 			buy_houses(curr_player);
 			goto before_roll;
@@ -1793,14 +1992,17 @@ before_roll:	refresh();
 		if (num_of_players == 1){
 			clear();
 			refresh();
+			attron(COLOR_PAIR(2));
 			print_form("Congratulation player %d, you have won the game\n", players[curr_player].player_id);
 			print_form("Press any button to continue\n");
+			attroff(COLOR_PAIR(2));
 			getch();
 			refresh();
 			break;
 		}
+		int temp = curr_player;
 		curr_player++;
-		startup_board();
+		startup_board(temp, prev, a + b);
 		
 
 		//print the board after rolling

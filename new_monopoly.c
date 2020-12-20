@@ -368,7 +368,10 @@ void initialize_player(char name[], int player_id, int curr_pos, float money, in
 	player->GOOJFC = GOOJFC;
 }
 /*Prints the monopoly board, still in progress*/
-void startup_board(){
+void startup_board(int play, int begin, int dice){
+	int start = begin - 1;
+	int i = 0;
+redo:	refresh();
 	int height;
 	int width;
 	//get the max y coordinate and x coordinate
@@ -455,6 +458,12 @@ void startup_board(){
 				if (mortgage[val - 1] == 1){
 					wattron(outer, COLOR_PAIR(1));
 				}
+				if (start == val - 1){
+					wattron(outer, COLOR_PAIR(2));
+				}
+				if ((mortgage[val - 1] == 1)&&(start == val -1)){
+					wattron(outer, COLOR_PAIR(3));
+				}
 				mvwprintw(outer,start_index_y, start_index_x, "%d", val);
 				if (checker == 2){
 					mvwprintw(outer, start_index_y + 2, start_index_x, "%s", get_color(val-1));
@@ -473,6 +482,12 @@ void startup_board(){
 			
 				if (mortgage[val - 1] == 1){
 					wattroff(outer, COLOR_PAIR(1));
+				}
+				if (start == val - 1){
+					wattroff(outer, COLOR_PAIR(2));
+				}
+				if ((mortgage[val - 1] == 1)&&(start == val -1)){
+					wattroff(outer, COLOR_PAIR(3));
 				}
 
 
@@ -495,12 +510,32 @@ void startup_board(){
 	int nex = 0;
 	
 	for (int i = 0; i < 40; i++){
+		if (mortgage[i] == 1){
+			wattron(inner, COLOR_PAIR(1));
+		}
+		if (start == i){
+			wattron(inner, COLOR_PAIR(2));
+		}
+		if ((mortgage[i] == 1)&&(start == i)){
+			wattron(inner, COLOR_PAIR(3));
+		}
 		if ( nex < 2){
 			if (nex == 0){
-				mvwprintw(inner, begin_write + (i/2), begin_write, "%d. %20s",i + 1, property_names[i]);
+				mvwprintw(inner, begin_write + (i/2), begin_write, "%d. %15s(%d)",i + 1, property_names[i], houses[i]);
+				for (int j = 0; j < num_of_players; j++){
+					if (players[j].current_position - 1 == i){
+						wprintw(inner,">%d", players[j].player_id);
+					}
+				}
+			
 			}
 			else{
-				mvwprintw(inner, begin_write + (i/2), begin_write + (inner_width/2), "%d. %20s",i + 1, property_names[i]);
+				mvwprintw(inner, begin_write + (i/2), begin_write + (inner_width/2), "%d. %15s(%d)",i + 1, property_names[i], houses[i]);
+				for (int j = 0; j < num_of_players; j++){
+					if (players[j].current_position - 1 == i){
+						wprintw(inner, ">%d", players[j].player_id);
+					}
+				}
 			}
 			nex++;
 		}
@@ -509,15 +544,58 @@ void startup_board(){
 		}
 		if (nex == 2){
 			nex = 0;
-		}		
+		}
+		if (mortgage[i] == 1){
+			wattroff(inner, COLOR_PAIR(1));
+		}
+		if (start == i){
+			wattroff(inner, COLOR_PAIR(2));
+		}	
+		if ((mortgage[i] == 1)&&(start == i)){
+			wattroff(inner, COLOR_PAIR(3));
+		}	
 		
 	}
-
+	wattron(inner, COLOR_PAIR(2));
+	mvwprintw(inner, 26, begin_write, "Currently green / current player is %s, player %d",players[play].name, players[play].player_id);
+	mvwprintw(inner, 27, begin_write, "Remember use 'CTRL+S' to save and 'esc' to exit");
+	wattroff(inner, COLOR_PAIR(2));
 
 	//display the windows on the screen
 	wrefresh(outer);
 	wrefresh(inner);
 	raw();
+	while (i < dice){
+
+
+		napms(500);
+
+		destroy_win(outer);
+		destroy_win(inner);
+				
+		clear();
+		//refresh();
+		start++;
+		if (start > 40){
+			start = start - 40 - 1;
+		}
+		i++;
+		goto redo;
+	}
+	if (i == dice){
+
+
+		napms(500);
+		destroy_win(outer);
+		destroy_win(inner);
+				
+
+		clear();
+		//refresh();
+		i++;
+		start = players[play].current_position - 1;
+		goto redo;
+	}
 	char ch = getch();
 	clear();
 	cbreak();
@@ -526,7 +604,11 @@ void startup_board(){
 	refresh();
 	if (ch == CTRL_S){
 		clear();
+		refresh();
 		saving(0);
+		clear();
+		refresh();
+		goto redo;
 	}
 	
 	if (ch == EXIT){

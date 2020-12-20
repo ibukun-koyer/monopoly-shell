@@ -105,7 +105,7 @@ static char *property_names[] = {"GO",
 				 "LIVERPOOL ST. STATION",
 				 "CHANCE",
 				 "PARK LANE",
-				 "SUPER TAX",
+				 "LUXURY TAX",
 				 "MAYFAIR",
 				  NULL};
 
