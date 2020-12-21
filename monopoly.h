@@ -122,8 +122,8 @@ char *community_chest[] = {"Advance to \"Go\". (Collect $200)",
 			   "Income tax refund. Collect $20.",
 			   "It is your birthday. Collect $10 from every player.",
 			   "Life insurance matures – Collect $100",
-			   "Hospital Fees. Pay $50. {Pay hospital fees of $100.}",
-			   "School fees. Pay $50. {Pay school fees {tax} of $150}",
+			   "Hospital Fees. Pay $50.",
+			   "School fees. Pay $50.",
 			   "Receive $25 consultancy fee.",
 			   "You are assessed for street repairs: Pay $40 per house and $115 per hotel you own.",
 			   "You have won second prize in a beauty contest. Collect $10.",	
@@ -131,18 +131,17 @@ char *community_chest[] = {"Advance to \"Go\". (Collect $200)",
 			   NULL};
 
 char *chance[] = {"Advance to \"Go\". (Collect $200)",
-		  "Advance to Illinois Ave.",
-		  "Advance to St. Charles Place. [Advance to Pall Mall] If you pass Go, collect $200.",
+		  "Advance to Trafalgar square.",
+		  "Advance to Pall Mall. If you pass Go, collect $200.",
 		  "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total 10 (ten) times the amount thrown.",
-		  "Advance token to the nearest Railroad and pay owner twice the rental to which he/she {he} is otherwise entitled. If Railroad is unowned, you may buy it from the Bank.",
+		  "Advance token to the nearest station and pay owner twice the rental to which he/she {he} is otherwise entitled. If Railroad is unowned, you may buy it from the Bank.",
 		  "Bank pays you dividend of $50.",
-		  "Get out of Jail Free.",
-		  "Go Back Three {3} Spaces.",
+		  "Get out of Jail Free.","Go Back Three {3} Spaces.",
 		  "Go to Jail. Go directly to Jail.",
 		  "Make general repairs on all your property: For each house pay $25, For each hotel {pay} $100.",
 		  "Pay poor tax of $15",
-		  "Take a trip to Reading Railroad. {Take a ride on the Reading. Advance token and} [Take a ride to King’s Cross Station] If you pass Go, collect $200.",
-		  "Take a walk on the Boardwalk. Advance token to Boardwalk.",
+		  "Take a ride to King’s Cross Station. If you pass Go, collect $200.",
+		  "Take a walk on the Mayfair. Advance token to Mayfair.",
 		  "You have been elected Chairman of the Board. Pay each player $50.",
 		  "Your building {and} loan matures. Receive {Collect} $150.",
 		  "You have won a crossword competition. Collect $100.",
@@ -173,13 +172,19 @@ static int rent_hotel[40] = {0, 250, 0, 450, 0, 0, 550, 0, 550, 600, 0, 750, 0, 
 /*function declarations*/
 static int mortgage_value[40] = {0};
 
-void main_menu(char **menu, int height, int width);
+void save_name(char real_name[], int highlight);
 
-void print(char *str, int y, int skip_move);
-
-int number_entered(int min, int max, char *str, char *success, char *prompt);
+int string_retrieval_user(char real_name[], int size);
 
 char* get_color(int number);
+
+void menu_save(int load_save);
+
+int save_file(char *file_name);
+
+int load_file(char *filename);
+
+int saving(int on_exit);
 
 char *is_mortgaged(int number);
 
@@ -194,26 +199,52 @@ void dash_line(int number);
 void initialize_player(char name[], int player_id, int curr_pos, float money, int 
 jail, int time_in_jail, int GOOJFC, player_t *player);
 
-void startup_board();
+void startup_board(int play, int begin, int dice);
+
+void print(char *str, int y, int skip_move);
+
+int number_entered(int min, int max, char *str, char *success, char *prompt);
 
 void start_new_game();
 
-int save_file(char *file_name);
+void main_menu(char **menu, int height, int width);
 
-void save_name(char real_name[], int highlight);
+int namecmp(char src[], char dest[]);
 
-int string_retrieval_user(char real_name[], int size);
+int current_players_assets(int index, char *array[], int picked[], int *ret,float *money, int *card);
 
-void menu_save(int load_save);
+void trade_with_player(int index);
 
-int saving(int on_exit);
+void declare_bankruptcy(int index);
 
-int load_file(char *filename);
+void mortgage_property(int index, int mortgage_var);
 
-void roll_dice(int *dice_one, int *dice_two);
+void sell_houses(int index);
 
-int monopoly(int pos);
+void buy_houses(int index);
+
+void auction(int index, int property_index);
+
+void print_props(int size, char color[], int id, char *str);
+
+void print_player_info(int index);
 
 void handle_payment(int action, int index, int pay_to_or_pay_from, int price, int who, int property_index);
 
-void auction(int index, int property_index);
+int monopoly(int pos);
+
+void property(int dice, int pos, int index, int *pay_to_or_pay_from, int *price, int *who);
+
+void handle_GO(int index, int dice, int *pay_to_or_pay_from, int *price, int *who);
+
+int is_closest(int pos, int a, int b, int c, int d);
+
+void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *price, int *who);
+
+void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int *who);
+
+void roll_dice(int *dice_one, int *dice_two);
+
+void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int *who);
+
+void rolling_conditions(int index, int *a, int *b, int *pay_to_or_pay_from, int *price, int *who);

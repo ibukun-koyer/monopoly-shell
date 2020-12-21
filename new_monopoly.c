@@ -45,6 +45,13 @@ start_again:
 		attron(COLOR_PAIR(1));
 		printw("\nstring is invalid, please enter a username with atleast one character\n");
 		attroff(COLOR_PAIR(1));
+		int y, x, maxy, maxx;
+		getyx(stdscr, y,x);
+		getmaxyx(stdscr, maxy, maxx);
+		if (y+4 >= maxy){
+			clear();
+			refresh();
+		}
 		goto start_again;
 	}
 	return i;
@@ -85,7 +92,7 @@ char* get_color(int number){
 		return "Dark Blue";
 	}
 	if (colors[number] == 9){
-		return "AIRPORTS";
+		return "STATIONS";
 	}
 	if (colors[number] == 8){
 		return "UTILITIES";
@@ -524,7 +531,7 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 				mvwprintw(inner, begin_write + (i/2), begin_write, "%d. %15s(%d)",i + 1, property_names[i], houses[i]);
 				for (int j = 0; j < num_of_players; j++){
 					if (players[j].current_position - 1 == i){
-						wprintw(inner,">%d", players[j].player_id);
+						wprintw(inner,"->%d", players[j].player_id);
 					}
 				}
 			
@@ -533,15 +540,15 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 				mvwprintw(inner, begin_write + (i/2), begin_write + (inner_width/2), "%d. %15s(%d)",i + 1, property_names[i], houses[i]);
 				for (int j = 0; j < num_of_players; j++){
 					if (players[j].current_position - 1 == i){
-						wprintw(inner, ">%d", players[j].player_id);
+						wprintw(inner, "->%d", players[j].player_id);
 					}
 				}
 			}
 			nex++;
 		}
-		else{
+		/*else{
 			mvwprintw(inner, begin_write + i, begin_write, "%d. %20s",i + 1, property_names[i]);
-		}
+		}*/
 		if (nex == 2){
 			nex = 0;
 		}
@@ -708,6 +715,12 @@ restart:printf("");
 	refresh();
 	//if the number is numeric, re-prompt
 	if ((entry > max)||(entry < min)){
+		int cury, curx;
+		getyx(stdscr, cury, curx);
+		if (cury+4 >= y){
+			clear();
+			refresh();
+		}
 		//change color to red
 		attron(COLOR_PAIR(1));
 		//print failure message
@@ -715,6 +728,7 @@ restart:printf("");
 		refresh();
 		//back to default color
 		attroff(COLOR_PAIR(1));
+
 		goto restart;
 	}
 	//change color to green
@@ -751,6 +765,13 @@ restart:	dash_line(DASH);
 			if (strcmp(real_name, players[i].name) == 0){
 				attron(COLOR_PAIR(1));
 				printw("\nUsername has already been taken, please pick another\n");
+				int y, x, maxy, maxx;
+				getyx(stdscr, y,x);
+				getmaxyx(stdscr, maxy, maxx);
+				if (y+4 >= maxy){
+					clear();
+					refresh();
+				}
 				attroff(COLOR_PAIR(1));
 				goto restart;
 			}

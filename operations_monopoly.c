@@ -9,7 +9,11 @@
 //WRAPPING UP NOTES:
 	//-WRITE UP COMMENTS
 	//-MAKE A MAKEFILE
-	//-FIX THE ISSUE WITH RUNNING OUT OF SPACE WHEN MANY INCORRECT VALUES WERE 	      ENTERED
+	//-FIX THE ISSUE WITH RUNNING OUT OF SPACE WHEN MANY INCORRECT VALUES WERE 	      ENTERED - FIXED
+	//-CHANGE THE COMMUNITY CHEST AND CHANCE TO THE EUROPEAN VERSION - CHANGED
+	//-MAKE FUNCTION DECLARARTIONS FOR NEW FUNCTIONS - COMPLETED
+	//-CHANGE NAME FROM AIRPORTS TO WHAT THEY ARE SPOSED TO BE. MAYBE STATION?-FIXED
+	//-CREATE A ALPHA BUILD TAG
 
 int namecmp(char src[], char dest[]){
 	int i = 0;
@@ -617,10 +621,10 @@ void print_player_info(int index){
 	char green[3] = {31, 32, 34};
 	char blue[2] = {37, 39}; 
 	print_props(2, brown, players[index].player_id, "BROWN");
-	print_props(4, airport, players[index].player_id, "AIRPORT");
+	print_props(4, airport, players[index].player_id, "STATION");
 	print_props(3, sky_blue, players[index].player_id, "SKY BLUE");
 	print_props(3, pink, players[index].player_id, "PINK");
-	print_props(2, utility, players[index].player_id, "UTILITY");
+	print_props(2, utility, players[index].player_id, "UTILITIES");
 	print_props(3, orange, players[index].player_id, "ORANGE");
 	print_props(3, red, players[index].player_id, "RED");
 	print_props(3, yellow,players[index].player_id, "YELLOW");
@@ -968,7 +972,7 @@ int monopoly(int pos){
 	}
 }
 void property(int dice, int pos, int index, int *pay_to_or_pay_from, int *price, int *who){
-	int ME = BANK;
+	int ME = 11;
 	//pos is assumed to be position - 1;
 	//index is also assumed to be inde - 1;
 	//2 means buy, pay_to_or_pay_from
@@ -1496,10 +1500,11 @@ void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int
 		else{
 			players[index].current_position = 40 + (players[index].current_position - 3);
 		}
-		handle_GO(index, 0, pay_to_or_pay_from, price, who);
-		handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
-		property(dice,players[index].current_position - 1, index, pay_to_or_pay_from, price, who);
-
+		//handle_GO(index, 0, pay_to_or_pay_from, price, who);
+		
+		//handle_payment(3, index, *pay_to_or_pay_from, *price, *who, -1);
+		//property(dice,players[index].current_position - 1, index, pay_to_or_pay_from, price, who);
+		movement(index, 0, pay_to_or_pay_from, price,who);
 		//handle payment
 		return;	
 	}
@@ -1740,6 +1745,10 @@ void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int
 		}
 		else{
 			handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+		}
+		if (*who == 11){
+			print_form("The property belongs to you. Press any key to continue.\n");
+			getch();
 		}
 		return;
 		
