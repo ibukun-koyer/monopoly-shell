@@ -1,20 +1,5 @@
 #include "new_monopoly.c"
-//HUGE FIX REQUIRED-CHANGE INDEX + 1 TO players[index].player_id - FIXED
-//ANOTHER HUGE ISSUE, SAVE FILE LOADS INCORRECT PROPERTIES FOR PLAYERS - FIXED
-//NEW PROBLEM, PUT THE GETCH BEFORE GO - FIXED
-//ALSO CLEAR THE MORTGAGE IN HANDLE PAYMENT - FIXED
-//NEW ISSUES - FIX THE TRADING ISSUE WHERE PLAYER 2 ITEMS DOES NOT SHOW UP - FIXED
-//ALSO FIX PRINTING IN JAIL - FIXED
-
-//WRAPPING UP NOTES:
-	//-WRITE UP COMMENTS
-	//-MAKE A MAKEFILE
-	//-FIX THE ISSUE WITH RUNNING OUT OF SPACE WHEN MANY INCORRECT VALUES WERE 	      ENTERED - FIXED
-	//-CHANGE THE COMMUNITY CHEST AND CHANCE TO THE EUROPEAN VERSION - CHANGED
-	//-MAKE FUNCTION DECLARARTIONS FOR NEW FUNCTIONS - COMPLETED
-	//-CHANGE NAME FROM AIRPORTS TO WHAT THEY ARE SPOSED TO BE. MAYBE STATION?-FIXED
-	//-CREATE A ALPHA BUILD TAG
-
+/*This is a function that checks to see if two names are the same*/
 int namecmp(char src[], char dest[]){
 	int i = 0;
 	while (i < 6){
@@ -28,6 +13,7 @@ int namecmp(char src[], char dest[]){
 	}
 	return 0;
 }
+/*This is a function that prompts the user to choose whatever they would like to and when they are done/exit, the properties picked are sent to back*/
 int current_players_assets(int index, char *array[], int picked[], int *ret,float *money, int *card){
 	clear();
 	refresh();
@@ -66,7 +52,7 @@ int current_players_assets(int index, char *array[], int picked[], int *ret,floa
 	m++;
 	array[m] = NULL;
 redo:	main_menu(array, 20, 35);
-
+	//if the highlight points to a property
 	if ((n > 0) && (highlight <= n)){
 		if (picked[highlight - 1] == 0){
 			picked[highlight - 1] = 1;
@@ -93,6 +79,7 @@ redo:	main_menu(array, 20, 35);
 			goto redo;
 		}
 	}
+	//if the highlight points to GOOJFC
 	else if ((n + 1 == highlight)&&(players[index].GOOJFC > 0)){
 		clear();
 		refresh();
@@ -107,10 +94,13 @@ redo:	main_menu(array, 20, 35);
 		refresh();
 		goto redo;
 	}
+	//if the user does not have a get out of jail free card, then we start from n, else we start from n+1. used p because n must remain constant until return after n as been set
 	int p = n;
+
 	if (players[index].GOOJFC > 0){
 		p = n+1;
 	}
+	//if highlight points to money
 	else if (p + 1 == highlight){
 		clear();
 		refresh();
@@ -125,19 +115,24 @@ redo:	main_menu(array, 20, 35);
 		refresh();
 		goto redo;
 	}
+	//if highligh points to done
 	else if (p + 2 == highlight){
 		clear();
 		*ret = n;
 		return 1;		//done
 	}
+	//if highlight points to exit
 	else if (p + 3 == highlight){
 		clear();
 		return 0;		//exit
 	}	
+	return 0;
 			
 	
 	
 }
+/*This is a function for that implements the trade functionality*/
+	/*Needs the current_players_assets function*/
 void trade_with_player(int index){
 	clear();
 	int y, x;
@@ -148,6 +143,7 @@ void trade_with_player(int index){
 	char *opt[8];
 	int a = 0;
 	int i = 0;
+	//This gets all the players name excluding the current player
 	while (a < num_of_players){
 		if (a != index){
 			opt[i] = players[a].name;
@@ -167,17 +163,18 @@ void trade_with_player(int index){
 		getch();
 		return;
 	}
-
+	//if exit
 	if (highlight - 1 == i - 1){
 		return;
 	}
 	int j = 0;
+	//for the asker
 	char *options_give[40];
 	int picked_give[40];
 	int size_picked_give;
 	float money_give;
 	int card_give = 0;
-
+	//for the offered
 	char *options_take[40];
 	int picked_take[40];
 	int size_picked_take;
@@ -187,17 +184,18 @@ void trade_with_player(int index){
 	int who = 0;
 	int temp = highlight;
 	while (j < num_of_players){
+		//if we have found the player we want to trade with
 		if (namecmp(players[j].name,opt[temp - 1])==0){
 			//player to be traded with found
 			int ret = current_players_assets(index, options_give, picked_give, &size_picked_give,&money_give, &card_give);
 			if (ret == 0){
-				return;
+				return;	//exit
 			}
 			ret = current_players_assets(j, options_take, picked_take, &size_picked_take,&money_take, &card_take);
 			if (ret == 0){
-				return;
+				return;	//exit
 			}
-			who = j;
+			who = j;	//be sure to get the players id
 			
 		
 		}
@@ -207,22 +205,25 @@ void trade_with_player(int index){
 	refresh();
 
 	getch();
+	//print out the deal that the player has offered
 	attron(A_UNDERLINE);
 	print_form("The below shows the trade being initiated\n");
 	attroff(A_UNDERLINE);
 	print_form("Please press any key to continue\n");
-	
+	//this basically prints a vertical line in the middle to dimacate the two player deals
 	for (int i =2; i < y; i++){
 		mvaddch(i, x/2, ACS_VLINE);
 	}
 	//on left side
 	mvprintw(2, 0, "What %s is offering %s", players[index].name, players[who].name);
+	//on the right side
 	mvprintw(2, (x+2)/2,"What %s wants from %s", players[index].name, players[who].name);
  	
 	int begin = 4;
 	int begin_2 = 4;
-
+	//print the properties offered by each player
 	for (int i = 0; i < 40; i++){
+		//picked give and picked take are the size of the options_give and options_take respectively. Note even though they may be 40 spaces, only picked_give/picked_take values are used
 		if ((picked_give[i] == 1)&&(i < size_picked_give)){		
 			mvprintw(begin, 0, "Property --> %s",options_give[i]);
 			begin++;
@@ -232,6 +233,7 @@ void trade_with_player(int index){
 			begin_2++;
 		}
 	}
+	//print the money and the GOOJFC offered and expecting
 	mvprintw(begin, 0, "Money --> $%f", money_give);
 	mvprintw(begin_2, (x+2)/2,"Money --> $%f", money_take);	
 	mvprintw(begin+1, 0, "Get out of jail free card --> %d", card_give);
@@ -240,11 +242,13 @@ void trade_with_player(int index){
 	clear();
 	refresh();
 	print_form("Would you like to accept this offer, %s?\n", players[who].name);	 
+	//accept or decline offer
 	char * options[] = {"ACCEPT",
 			"DECLINE",
 			NULL};
 	main_menu(options, 10, 25);
 	if (highlight == 1){
+		//handle the acceptance
 		for (int i = 0; i < 40; i++){
 			if ((picked_give[i] == 1)&&(i < size_picked_give)){		
 				for (int j = 0; j < 40; j++){
@@ -269,13 +273,16 @@ void trade_with_player(int index){
 		handle_payment(3, who, 1, money_give, players[index].player_id,-1);
 	}
 	else if (highlight == 2){
+		//decline
 		return;
 	}	
 	return;
 }
+/*Declare bankruptcy*/
 void declare_bankruptcy(int index){
 	//remove all houses the player owned and also unmortgage and sell the properties to other players
 	int temp = players[index].player_id;
+
 	for (int i = 0; i < 40; i++){
 		if (ownership[i] == temp){
 			mortgage[i] = 0;
@@ -283,7 +290,7 @@ void declare_bankruptcy(int index){
 		}
 		
 	}
-	//current player declared bankruptcy
+	//current player declared bankruptcy, remove him from the available players array
 	for (int i = 0; i < num_of_players - 1;i++){
 		if (i >= index){
 			players[i] = players[i + 1];
@@ -297,6 +304,7 @@ void declare_bankruptcy(int index){
 	if (num_of_players == 1){
 		return;
 	}
+	//auction off their property
 	for (int i = 0; i < 40; i++){
 		if (ownership[i] == temp){
 			auction(0, i);
@@ -304,6 +312,7 @@ void declare_bankruptcy(int index){
 	}
 	
 }
+/*Mortgaged properties implementation*/
 void mortgage_property(int index, int mortgage_var){
 	//1 means mortgage and 0 means un-mortgage
 	clear();
@@ -312,6 +321,7 @@ void mortgage_property(int index, int mortgage_var){
 	refresh();	
 	char *props[40];
 	int j = 0;
+	//print out only properties that are unmortgaged
 	for (int i = 0; i < 40; i++){
 		if (ownership[i] == players[index].player_id){
 			if ((mortgage[i] != mortgage_var)&&(houses[i] == 0)){
@@ -329,8 +339,10 @@ void mortgage_property(int index, int mortgage_var){
 	if (highlight - 1 == j - 1){
 		return;
 	}
+	
 	for (int i = 0; i < 40; i++){
 		if (strcmp(props[highlight - 1], property_names[i]) == 0){
+			//if attempting to mortgage
 			if (mortgage_var == 1){
 				clear();
 				refresh();
@@ -343,6 +355,7 @@ void mortgage_property(int index, int mortgage_var){
 				return;
 				
 			}
+			//if attempting to un-mortgage
 			else if (mortgage_var == 0){
 				int id = players[index].player_id;
 				clear();
@@ -363,11 +376,12 @@ void mortgage_property(int index, int mortgage_var){
 	}
 	
 }
+/*Sell houses implementation*/
 void sell_houses(int index){
 	//index also starts from 0
 	clear();
 	refresh();
-	
+	//few notes to the player
 	print_form("You have $%f in your wallet\n", players[index].money);
 	print_form("This are the prices for bulding houses/hotels\n");
 	print_form("1. BROWN AND SKY_BLUES COST $50\n");
@@ -382,6 +396,7 @@ void sell_houses(int index){
 	refresh();	
 	char *props[40];
 	int j = 0;
+	//print out only properties that have monopolies
 	for (int i = 0; i < 40; i++){
 		if (ownership[i] == players[index].player_id){
 			int ret = monopoly(i);
@@ -402,6 +417,7 @@ void sell_houses(int index){
 	int id;
 	for (int i = 0; i < 40; i++){
 		if ((strcmp(props[highlight - 1], property_names[i]) == 0)&&(houses[i] > 0)){
+			//this block of code here simply gets the price to be collected from the bank using their colors
 			id = players[index].player_id;	
 			if ((colors[i] == 1)||(colors[i] == 2)){
 				handle_payment(3, index, 1, 25, BANK, -1);
@@ -420,6 +436,7 @@ void sell_houses(int index){
 			}
 			
 		}
+		//if all houses have been sold
 		else if ((strcmp(props[highlight - 1], property_names[i]) == 0)&&(houses[i] == 0)){
 			clear();
 			refresh();
@@ -432,7 +449,11 @@ void sell_houses(int index){
 	}
 	
 }
+/*Buy homes implementation*/
 void buy_houses(int index){
+	//THIS FUNCTION IMPLEMENTATION IS EXTREMELY SIMILAR TO SELL HOUSES. WITH A FEW DIFFERENCE
+		//stops building at 5
+		//2x more expensive than selling
 	//index also starts from 0
 	clear();
 	refresh();
@@ -508,6 +529,7 @@ void buy_houses(int index){
 	}
 	
 }
+/*This function implements the auction functionality*/
 void auction(int index, int property_index){
 	clear();
 	int y, x;
@@ -516,6 +538,7 @@ void auction(int index, int property_index){
 	int fold_list[8] = {0};
 	int winner = 0;
 	int loop = index;
+	//continues until someone wins the auction
 	for (int i = index; TRUE; i++){
 		clear();
 		refresh();
@@ -526,18 +549,20 @@ void auction(int index, int property_index){
 			     "Fold",
 			     NULL};
 		main_menu(opt, 7, 20);
+		//if bid, be sure the user does not enter a less bid than the prev
 		if (highlight == 1){
 			clear();
 			print_form("You own $%f\n",players[loop].money);
 			print_form("Previous bid was $%d\n", bid); 
 			bid = number_entered(bid + 1, players[loop].money, "Invalid bid, please enter a valid amount\n", "Correct option entered\n", "Please enter your bid: ");
 		}
+		//if fold, set the fold_list at index
 		if (highlight == 2){
 			fold_list[loop] = 1;
 		}
 		
 		int track = 0;
-		
+		//if all players but one player remains, the remaining player wins auction
 		for (int j = 0; j < num_of_players; j++){
 			if (fold_list[j] == 1){
 				track++;
@@ -559,10 +584,15 @@ void auction(int index, int property_index){
 	getch();
 	handle_payment(2, winner, 0, bid, BANK, property_index);
 }
+/*This function prints out properties based on color.*/
 void print_props(int size, char color[], int id, char *str){
 	int count = 0;
+	//size is the number of properties with the color
+	//color is an array that stores all the indexes for a particular color
 	for (int i = 0; i < size; i++){
+		
 		int temp = color[i];
+		//if the current player owns the current property
 		if (ownership[temp] == id){
 			if (mortgage[temp] == 1){
 				attron(COLOR_PAIR(1));
@@ -591,6 +621,8 @@ void print_props(int size, char color[], int id, char *str){
 	//print_form("\n");
 	refresh();
 }
+/*This function implements the print player info functionality*/
+	/*This function uses the print_props function*/
 void print_player_info(int index){
 	clear();
 	int y, x;
@@ -634,9 +666,14 @@ void print_player_info(int index){
 	getch();
 	
 }
+/*This is one of the most important function. it handles everything that has to do with players money*/
 void handle_payment(int action, int index, int pay_to_or_pay_from, int price, int who, int property_index){
 //if action is 1 - pay for rent
 //if action is 2 - buy property from bank
+
+//if pay_to_or_pay_from is 0, pay
+//if pay_to_or_pay_from is 1, collect
+//if pay_to_or_pay_from is 2, buy a property
 	if(price == 0){	
 		return;
 	}
@@ -674,8 +711,10 @@ void handle_payment(int action, int index, int pay_to_or_pay_from, int price, in
 	}
 	
 	refresh();
+	//if buyinh
 	if (action == 2){
 restart:	refresh();
+		//options available
 		if (property_index < 0){	
 			char *options[] = {"Buy",
 					   "Auction",
@@ -693,6 +732,7 @@ restart:	refresh();
 				print_form("You do not have enough money to pay for this property, please select one of the following options\n");
 
 				refresh();
+				//if unable to buy
 				char *option[] = {"Auction",
 					     "Mortgage property",
 					     "Sell houses/hotels",
@@ -746,6 +786,7 @@ restart:	refresh();
 			return;
 		}
 	}
+	//if pay rent
 	if (action == 1){
 redo:		refresh();
 		int amt = 0;
@@ -755,6 +796,7 @@ redo:		refresh();
 		else{
 			amt = price;
 		}
+		//options available
 		char *options[] = {"Pay rent",
 				   "Mortgage",
 				   "Sell houses/hotel",
@@ -820,6 +862,7 @@ redo:		refresh();
 			return;
 		}
 	}
+	//if collect, recursive calls made here
 	if (pay_to_or_pay_from == 1){
 		//collecting
 		if (who == ALL){
@@ -868,6 +911,7 @@ redo:		refresh();
 
 
 }
+/*checks to see if a property has a monopoly*/
 int monopoly(int pos){
 //if color is brown,color is 1
 //if color is sky blue, color is 2
@@ -970,9 +1014,11 @@ int monopoly(int pos){
 		}
 		return val;
 	}
+	return 0;
 }
+/*This checks to see the expected price and who the pay is supposed to go to based on some factors*/
 void property(int dice, int pos, int index, int *pay_to_or_pay_from, int *price, int *who){
-	int ME = 11;
+	int ME = 11;	//means player owns the current property
 	//pos is assumed to be position - 1;
 	//index is also assumed to be inde - 1;
 	//2 means buy, pay_to_or_pay_from
@@ -1071,6 +1117,7 @@ void property(int dice, int pos, int index, int *pay_to_or_pay_from, int *price,
 	
 	
 }
+/*This handles more than GO. it handles most of the movement of each player*/
 void handle_GO(int index, int dice, int *pay_to_or_pay_from, int *price, int *who){
 	int pos = players[index].current_position;
 	players[index].current_position+=dice;
@@ -1086,6 +1133,7 @@ void handle_GO(int index, int dice, int *pay_to_or_pay_from, int *price, int *wh
 		*price 		    = 200;
 		*who		    = BANK;
 	}
+	//if player did not pass go
 	else{
 		*pay_to_or_pay_from = 0;
 		*price 		    = 0;
@@ -1093,6 +1141,7 @@ void handle_GO(int index, int dice, int *pay_to_or_pay_from, int *price, int *wh
 	}
 
 }
+/*This finds the closest property a, b, c, or d from pos*/
 int is_closest(int pos, int a, int b, int c, int d){
 	//pos is starting from 1
 	if (pos < a){
@@ -1109,6 +1158,7 @@ int is_closest(int pos, int a, int b, int c, int d){
 	}
 	return a;
 }
+/*Handles community chest*/
 void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *price, int *who){
 	//pay_to_or_pay_from is 0 to pay to someone and 1 to collect
 	//who is 0 to represent bank, player_id to rep player, 10 to rep all player
@@ -1339,6 +1389,7 @@ void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *p
 		return;
 	}
 }
+/*Handles chance*/
 void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int *who){
 	//pay_to_or_pay_from is 0 to pay to someone and 1 to collect
 	//who is 0 to represent bank, player_id to rep player, 10 to rep all player
@@ -1638,6 +1689,7 @@ void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int
 	}
 		
 }
+/*This generates a random number for the first and second dice*/
 /*BE SURE TO USE SRAND(time(NULL)) BEFORE USING THIS FUNCTION*/
 void roll_dice(int *dice_one, int *dice_two){
 	
@@ -1650,6 +1702,7 @@ void roll_dice(int *dice_one, int *dice_two){
 	print_form("Please press any key to continue");
 	getch();
 }	
+/*this handles the actual movement, and the behaviour of each box*/
 void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int *who){
 	//index also must be 0
 	
@@ -1756,18 +1809,21 @@ void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int
 
 }
 	
-
+/*This basically checks for two major things before calling movement*/
+	/*Checks to see if the player is in jail, hence behaviour should be a diff*/
+	/*checks to see if the player rolls three times and puts them in jail*/
 void rolling_conditions(int index, int *a, int *b, int *pay_to_or_pay_from, int *price, int *who){
 	clear();
 	refresh();
 	if ((players[index].in_jail == 1)&&(players[index].current_position == 11)){
 		players[index].time_spent_in_jail++;
-		
+		//if player rolled doubles
 		if (*a == *b){
 			print_form("YOU ROLLED DOUBLES, YOU GET OUT OF JAIL\n");
 			movement(index, *a + *b, pay_to_or_pay_from, price, who);
 			return;
 		}
+		//if the user has a get out of jail card
 		if (players[index].GOOJFC > 0){
 			if ((*a != *b)&&(players[index].time_spent_in_jail < 3)){
 				//-would you like to use card, pay, wait for next turn
@@ -1845,6 +1901,7 @@ void rolling_conditions(int index, int *a, int *b, int *pay_to_or_pay_from, int 
 			}
 			return;
 		}
+		//if player has no get out of jail cards
 		if (players[index].GOOJFC == 0){
 			if ((*a != *b)&&(players[index].time_spent_in_jail < 3)){
 				//-would you like to use pay, wait for next turn
@@ -1901,6 +1958,7 @@ repeat:	movement(index, *a + *b, pay_to_or_pay_from, price, who);
 			roll_dice(a, b);
 			goto repeat;
 		}
+		//if rolled three times
 		if (count == 3){
 			clear();
 			refresh();
@@ -1915,12 +1973,15 @@ repeat:	movement(index, *a + *b, pay_to_or_pay_from, price, who);
 
 int main(int argc, char **argv){
 	int number_gotten = 0;
+	//if the user enters more than 2 arguements
 	if (argc > 2){
 		printf("Too many arguements, please enter a maximum of two arguements.\n");
 		return 1;
 	}
+	//if the user enters two, hence the second must be the speed of animation
 	if (argc == 2){
-		int k = 0;
+		int k = 0;	
+		//check to see if the string contains non-numeric chars, also calc the size
 		while (argv[1][k] != '\0'){
 			if ((argv[1][k] < 48)||(argv[1][k] > 57)){
 				printf("Second arguement is the speed, hence must be numeric.\n");
@@ -1928,6 +1989,7 @@ int main(int argc, char **argv){
 			}
 			k++;
 		}
+		//convert from ascii to int
 		for (int i = 0; i < k; i++){
 			int power = 1;
 			for (int j = 0; j < k - i - 1; j++){
@@ -1937,16 +1999,19 @@ int main(int argc, char **argv){
 		} 
 		SPEED = number_gotten;
 	}
+	//calculate the mortgage and value 
 	for (int i = 0; i < 40; i++){
 		mortgage_value[i] = prices[i] /2;
 		mortgage[i] = 0;
 		ownership[i] = 0;
 	}
+	//application started
 	printf(GREEN("APPLICATION: starting up application\n\n"));
 	refresh();
 	initscr();	//start up new window
 	int x,y;
 	getmaxyx(stdscr, y, x);	//get the max y and x
+	//if the size of the screen is not 132 x 41 screen resolution
 	if ((y != 41) || (x != 132)){
 		endwin();
 		printf(RED("APPLICATION: please open the application using the default screen, precisely 132 x 41\n"));
@@ -1955,6 +2020,7 @@ int main(int argc, char **argv){
 	DASH = x;		//make sure the dash prints to the max x
 	dash_line(DASH);
 	//if system has no colors 
+
 	if (has_colors() == FALSE){
 		endwin();		
 		printf(RED("\nAPPLICATION: This system has no colors\n"));
@@ -1989,18 +2055,18 @@ int main(int argc, char **argv){
 	getch();
 	clear();
 	refresh();
-	char **main = malloc(sizeof(char *) * 3);
-	if (main == NULL){
+	char **mains = malloc(sizeof(char *) * 3);
+	if (mains == NULL){
 		endwin();
 		printf("No space in memory\n");
 	}
-	main[0] = "Start new game";
-	main[1] = "Load saved game";
-	main[2] = NULL;
+	mains[0] = "Start new game";
+	mains[1] = "Load saved game";
+	mains[2] = NULL;
 	
-	main_menu(main, 6, 30);
+	main_menu(mains, 6, 30);
 	clear();
-	main[3] = NULL;
+	//mains[3] = NULL;
 	
 	//start reading the file names in
 	if (is_empty_save_slot(save_file_one) && is_empty_save_slot(save_file_two) && is_empty_save_slot(save_file_three)){
@@ -2039,7 +2105,7 @@ skip:	if (highlight == 1){
 		
 		
 	}
-	free(main);
+	free(mains);
 	clear();
 	refresh();
 	dash_line(DASH);
@@ -2083,7 +2149,7 @@ skip:	if (highlight == 1){
 		}
 		startup_board(val, players[val].current_position, 0);
 	}
-	//GAME BEGIN
+	//GAME BEGINs
 	srand(time(NULL));
 	while(1){
 		
@@ -2174,6 +2240,7 @@ before_roll:	refresh();
 	}
 	
 	endwin();
+	//this should always be printed if the program was exited using esc, if the program was exited using ctrl+c, you wouldn't see this message
 	printf(GREEN("APPLICATION: Application closed successfully\n"));
 	return 0;
 }

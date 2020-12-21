@@ -1,12 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 NAME: ADEKOYA IBUKUN
 ///////////////////////////////////////////////////////////////////////////////////////
--program makes use of ncurses to create new windows
+-program makes use of ncurses to create new windows.
+
 -monopoly.c is an old implementation that uses the regular linux terminal, use new_mon-
 opoly.c. 
--Be sure to compile using the -lncurses flag, 'gcc new_monopoly.c -lncurses' to be prec-
-ise.
+
+-compile this program by using the make command, and then run this program by writing either one of the following:
+	'./a.out'-this method uses the default animation speed
+	'./a.out numeric_speed'-where numeric_speed is a number that represents the speed. use a speed greater than 1000 if you want a SLOWER animation, and use a value less than 1000 if you want a FASTER animation.
+
 -to learn more about ncurses, visit 'https://tldp.org/HOWTO/NCURSES-Programming-HOWTO/misc.html'
+
 -monopoly rules 'http://www.jdawiseman.com/papers/trivia/monopoly-rents.html'
+
 -more monopoly rules 'http://www.mtholyoke.edu/~blerner/cs315/Monopoly/MonopolyRules.pdf?tag=makemoney0821-20'
 

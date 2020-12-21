@@ -169,82 +169,126 @@ static int rent_two_house[40] = {0, 30, 0, 60, 0, 50, 90, 0, 90, 100, 0, 150, 0,
 static int rent_three_house[40] = {0, 90, 0, 180, 0, 100, 270, 0, 270, 300, 0, 450, 0, 450, 500, 100,550, 0,550, 600, 0, 700, 0, 700, 750, 100, 800, 800, 0, 850, 0, 900, 900, 0,1000, 100, 0,1100, 0, 1400};
 static int rent_four_house[40] = {0, 160, 0, 320, 0, 200, 400, 0, 400, 450, 0, 625, 0, 625, 700, 200,750, 0,750, 800, 0, 875, 0, 875, 925, 200, 975, 975, 0, 1025, 0, 1100, 1100, 0, 1200, 200, 0, 1300, 0, 1700};
 static int rent_hotel[40] = {0, 250, 0, 450, 0, 0, 550, 0, 550, 600, 0, 750, 0, 750, 900, 0,950, 0,950,1000, 0, 1050, 0, 1050, 1100,0 , 1150, 1150, 0, 1200, 0, 1275, 1275, 0, 1400, 0, 0, 1500, 0, 2000};
-/*function declarations*/
 static int mortgage_value[40] = {0};
 
+/*function declarations*/
+
+/*This function copies the entered save_name and sends them to the actual save names*/
 void save_name(char real_name[], int highlight);
 
+/*This function gets a string from the user*/
 int string_retrieval_user(char real_name[], int size);
 
+/*This function converts the color number into a descriptive string*/
 char* get_color(int number);
 
+/*This function prompts the user to pick a slot and then either saves or loads based on the load_save variable*/
 void menu_save(int load_save);
 
+/*This saves to the file*/
 int save_file(char *file_name);
 
+/*This loads from the file*/
 int load_file(char *filename);
 
+/*This basically checks to see if saving is being called from esc or just a save*/
 int saving(int on_exit);
 
+/*Prints a decriptive string of the values in the mortgaged array*/
 char *is_mortgaged(int number);
 
+/*Returns a name string of a property*/
 char *owner(int number);
 
+/*This is a function that checks to see if the save file is empty or not*/
 int is_empty_save_slot(char *filename);
 
+/*This function deletes windows*/
 void destroy_win(WINDOW *local_win);
 
+/*This function prints number amount of dashes in the Window, it is a decorative print*/
 void dash_line(int number);
 
+/*initializes a player struct*/
 void initialize_player(char name[], int player_id, int curr_pos, float money, int 
 jail, int time_in_jail, int GOOJFC, player_t *player);
 
+/*Prints the monopoly board, still in progress*/
 void startup_board(int play, int begin, int dice);
 
+/*print out in a regulated character per line manner*/
 void print(char *str, int y, int skip_move);
 
+/*gets numeric input from user*/
 int number_entered(int min, int max, char *str, char *success, char *prompt);
 
+/*This starts a new game*/
 void start_new_game();
 
+/*Prints the interactive menu system*/
 void main_menu(char **menu, int height, int width);
 
+/*This is a function that checks to see if two names are the same*/
 int namecmp(char src[], char dest[]);
 
+/*This is a function that prompts the user to choose whatever they would like to and when they are done/exit, the properties picked are sent to back*/
 int current_players_assets(int index, char *array[], int picked[], int *ret,float *money, int *card);
 
+/*This is a function for that implements the trade functionality*/
+	/*Needs the current_players_assets function*/
 void trade_with_player(int index);
 
+/*Declare bankruptcy*/
 void declare_bankruptcy(int index);
 
+/*Mortgaged properties implementation*/
 void mortgage_property(int index, int mortgage_var);
 
+/*Sell houses implementation*/
 void sell_houses(int index);
 
+/*Buy homes implementation*/
 void buy_houses(int index);
 
+/*This function implements the auction functionality*/
 void auction(int index, int property_index);
 
+/*This function prints out properties based on color.*/
 void print_props(int size, char color[], int id, char *str);
 
+/*This function implements the print player info functionality*/
+	/*This function uses the print_props function*/
 void print_player_info(int index);
 
+/*This is one of the most important function. it handles everything that has to do with players money*/
 void handle_payment(int action, int index, int pay_to_or_pay_from, int price, int who, int property_index);
 
+/*checks to see if a property has a monopoly*/
 int monopoly(int pos);
 
+/*This checks to see the expected price and who the pay is supposed to go to based on some factors*/
 void property(int dice, int pos, int index, int *pay_to_or_pay_from, int *price, int *who);
 
+/*This handles more than GO. it handles most of the movement of each player*/
 void handle_GO(int index, int dice, int *pay_to_or_pay_from, int *price, int *who);
 
+/*This finds the closest property a, b, c, or d from pos*/
 int is_closest(int pos, int a, int b, int c, int d);
 
+/*Handles community chest*/
 void handle_community_chest(int index, int dice, int *pay_to_or_pay_from, int *price, int *who);
 
+/*Handles chance*/
 void handle_chance(int index, int dice, int *pay_to_or_pay_from, int *price, int *who);
 
+/*This generates a random number for the first and second dice*/
+/*BE SURE TO USE SRAND(time(NULL)) BEFORE USING THIS FUNCTION*/
 void roll_dice(int *dice_one, int *dice_two);
 
+/*this handles the actual movement, and the behaviour of each box*/
 void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int *who);
 
+/*This basically checks for two major things before calling movement*/
+	/*Checks to see if the player is in jail, hence behaviour should be a diff*/
+	/*checks to see if the player rolls three times and puts them in jail*/
 void rolling_conditions(int index, int *a, int *b, int *pay_to_or_pay_from, int *price, int *who);

@@ -1,4 +1,5 @@
 #include "monopoly.h"
+/*This function copies the entered save_name and sends them to the actual save names*/
 void save_name(char real_name[], int highlight){
 	if (highlight == 1){
 		//save_one = real_name;
@@ -13,6 +14,7 @@ void save_name(char real_name[], int highlight){
 		memcpy(save_three, real_name, 16);
 	}
 }
+/*This function gets a string from the user*/
 int string_retrieval_user(char real_name[], int size){
 start_again:
 	refresh();
@@ -56,6 +58,7 @@ start_again:
 	}
 	return i;
 }
+/*This function converts the color number into a descriptive string*/
 char* get_color(int number){
 //if color is brown, color is 1
 //if color is sky blue, color is 2
@@ -101,6 +104,7 @@ char* get_color(int number){
 		return "";
 	}
 }
+/*This function prompts the user to pick a slot and then either saves or loads based on the load_save variable*/
 void menu_save(int load_save){
 retry:	refresh();
 	char empty[3];	
@@ -213,6 +217,7 @@ retry:	refresh();
 		}
 	}			 
 }
+/*This saves to the file*/
 int save_file(char *file_name){
 	int empty = is_empty_save_slot(file_name);
 	if (empty == 0){
@@ -276,7 +281,7 @@ again:	for (int i = 0; i < 16; i++){
 	fclose(fp);
 	return 2; 	//successful writing to save file
 }	
-
+/*This loads from the file*/
 int load_file(char *filename){
 	FILE *fp; 
 	if (!(fp = fopen(filename, "rb"))){
@@ -304,6 +309,7 @@ int load_file(char *filename){
 	//getch();
 	return 1;			//success 
 }	
+/*This basically checks to see if saving is being called from esc or just a save*/
 int saving(int on_exit){
 	if (on_exit == 1){
 		int save = number_entered(0, 1, "Number entered is invalid, please enter either 1 or 0\n", "Correct option entered\n", "Would you like to save?, enter 1 for yes and 0 for no: ");
@@ -315,6 +321,7 @@ int saving(int on_exit){
 	return 1;	
 					
 }	
+/*Prints a decriptive string of the values in the mortgaged array*/
 char *is_mortgaged(int number){
 	if (mortgage[number] == 1){
 		return "Mortgaged";
@@ -323,6 +330,7 @@ char *is_mortgaged(int number){
 		return "Not Mortgaged";
 	}	 
 }
+/*Returns a name string of a property*/
 char *owner(int number){
 	if (ownership[number] == 0){
 		return "NONE";
@@ -418,7 +426,7 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 		//move on to the next x coordinate
 		next_x+=inc;
 	} 
-	//MAYBE REFACTOR??
+	
 	double inc_y = (double)inner_height /bars;	//increment to next y coordinate1
 	double next_y = inc_y + inner_starty;	//next y location
 	//print horizontal bars on the board
@@ -462,16 +470,20 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 			}
 
 			if (val < 41){
+				//if mortgaged
 				if (mortgage[val - 1] == 1){
 					wattron(outer, COLOR_PAIR(1));
 				}
+				//if this is the current player pos
 				if (start == val - 1){
 					wattron(outer, COLOR_PAIR(2));
 				}
+				//if current player pos and property is mortgaged
 				if ((mortgage[val - 1] == 1)&&(start == val -1)){
 					wattron(outer, COLOR_PAIR(3));
 				}
 				mvwprintw(outer,start_index_y, start_index_x, "%d", val);
+				//print color, prices, owner for each box
 				if (checker == 2){
 					mvwprintw(outer, start_index_y + 2, start_index_x, "%s", get_color(val-1));
 					if (prices[val - 1] != 0){
@@ -517,6 +529,7 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 	int nex = 0;
 	
 	for (int i = 0; i < 40; i++){
+		//color for special cases showed earlier
 		if (mortgage[i] == 1){
 			wattron(inner, COLOR_PAIR(1));
 		}
@@ -527,6 +540,7 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 			wattron(inner, COLOR_PAIR(3));
 		}
 		if ( nex < 2){
+			//print property names in the center box, houses and the players on each property
 			if (nex == 0){
 				mvwprintw(inner, begin_write + (i/2), begin_write, "%d. %15s(%d)",i + 1, property_names[i], houses[i]);
 				for (int j = 0; j < num_of_players; j++){
@@ -572,16 +586,13 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 	wrefresh(outer);
 	wrefresh(inner);
 	raw();
+	//This creates the movement animation
 	while ((i < dice)&&(players[play].in_jail == 0)){
 
-
+		//this is where the value sent in from the user is used, default SPEED is 1000
 		napms(SPEED);
-
-		//destroy_win(outer);
-		//destroy_win(inner);
 				
 		clear();
-		//refresh();
 		start++;
 		if (start > 40){
 			start = start - 40 - 1;
@@ -596,12 +607,7 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 
 
 		napms(SPEED);
-		//destroy_win(outer);
-		//destroy_win(inner);
-				
-
 		clear();
-		//refresh();
 		i++;
 		start = players[play].current_position - 1;
 
@@ -613,8 +619,8 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 	clear();
 	cbreak();
 	
-	//printw("The key entered is %d\n", ch);
 	refresh();
+	//if the user wants to save
 	if (ch == CTRL_S){
 		clear();
 		refresh();
@@ -623,7 +629,7 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 		refresh();
 		goto redo;
 	}
-	
+	//if the player wants to exit
 	if (ch == EXIT){
 		destroy_win(outer);
 		destroy_win(inner);
@@ -637,8 +643,6 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 		if (retry == 1){
 			clear();
 			
-			//back to the load pick, this is because other slots may have data	
-			//change this to include a save question when save is implemented
 			saving(1);
 			
 			
@@ -653,7 +657,6 @@ redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 	}
 		
 	wrefresh(inner);
-	//getch();
 	destroy_win(outer);
 	destroy_win(inner);
 }
@@ -744,6 +747,7 @@ restart:printf("");
 	clear();
 	return entry;
 }
+/*This starts a new game*/
 void start_new_game(){
 	//dash_line(DASH);
 	char line[17];
