@@ -3,6 +3,14 @@
 //ANOTHER HUGE ISSUE, SAVE FILE LOADS INCORRECT PROPERTIES FOR PLAYERS - FIXED
 //NEW PROBLEM, PUT THE GETCH BEFORE GO - FIXED
 //ALSO CLEAR THE MORTGAGE IN HANDLE PAYMENT - FIXED
+//NEW ISSUES - FIX THE TRADING ISSUE WHERE PLAYER 2 ITEMS DOES NOT SHOW UP - FIXED
+//ALSO FIX PRINTING IN JAIL - FIXED
+
+//WRAPPING UP NOTES:
+	//-WRITE UP COMMENTS
+	//-MAKE A MAKEFILE
+	//-FIX THE ISSUE WITH RUNNING OUT OF SPACE WHEN MANY INCORRECT VALUES WERE 	      ENTERED
+
 int namecmp(char src[], char dest[]){
 	int i = 0;
 	while (i < 6){
@@ -16,7 +24,7 @@ int namecmp(char src[], char dest[]){
 	}
 	return 0;
 }
-int current_players_assets(int index, char *array[], char picked[], int *ret,float *money, int *card){
+int current_players_assets(int index, char *array[], int picked[], int *ret,float *money, int *card){
 	clear();
 	refresh();
 	print_form("This are your assets, %s\n", players[index].name);
@@ -40,7 +48,7 @@ int current_players_assets(int index, char *array[], char picked[], int *ret,flo
 	n = m; 		//now n contains the number of properties
 	
 	if (n > 0){
-		memset(picked, 0, n);
+		memset(picked, 0, sizeof(int) * n);
 	}
 	if (players[index].GOOJFC > 0){
 		array[m] = "GET OUT OF JAIL CARD";
@@ -54,6 +62,7 @@ int current_players_assets(int index, char *array[], char picked[], int *ret,flo
 	m++;
 	array[m] = NULL;
 redo:	main_menu(array, 20, 35);
+
 	if ((n > 0) && (highlight <= n)){
 		if (picked[highlight - 1] == 0){
 			picked[highlight - 1] = 1;
@@ -160,13 +169,13 @@ void trade_with_player(int index){
 	}
 	int j = 0;
 	char *options_give[40];
-	char picked_give[40];
+	int picked_give[40];
 	int size_picked_give;
 	float money_give;
 	int card_give = 0;
 
 	char *options_take[40];
-	char picked_take[40];
+	int picked_take[40];
 	int size_picked_take;
 	float money_take;
 	int card_take = 0;
@@ -191,6 +200,9 @@ void trade_with_player(int index){
 		j++;
 	}
 	clear();
+	refresh();
+
+	getch();
 	attron(A_UNDERLINE);
 	print_form("The below shows the trade being initiated\n");
 	attroff(A_UNDERLINE);
@@ -205,6 +217,7 @@ void trade_with_player(int index){
  	
 	int begin = 4;
 	int begin_2 = 4;
+
 	for (int i = 0; i < 40; i++){
 		if ((picked_give[i] == 1)&&(i < size_picked_give)){		
 			mvprintw(begin, 0, "Property --> %s",options_give[i]);
@@ -558,6 +571,9 @@ void print_props(int size, char color[], int id, char *str){
 		}
 	}
 	if (count != 0){
+		int y, x;
+		getyx(stdscr, y, x);
+		move(y, 100);
 		print_form("-->%s", str);
 		int ret = monopoly(color[0]);
 		if ((ret == 1)||(ret == 5)||(ret == 7)){
@@ -565,7 +581,7 @@ void print_props(int size, char color[], int id, char *str){
 			print_form("%s", "-->Monopoly");
 			attroff(COLOR_PAIR(2));
 		}
-		print_form("\n");
+		print_form("\n\n");
 		
 	}
 	//print_form("\n");
@@ -1622,6 +1638,12 @@ void roll_dice(int *dice_one, int *dice_two){
 	
 	*dice_one = (rand() % 6) + 1;
 	*dice_two = (rand() % 6) + 1;
+	clear();
+	refresh();
+	print_form("Your first dice is %d, and your second is %d\n", *dice_one, *dice_two);
+	print_form("You have a total of %d\n", *dice_one+*dice_two);
+	print_form("Please press any key to continue");
+	getch();
 }	
 void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int *who){
 	//index also must be 0
@@ -1726,30 +1748,134 @@ void movement(int index, int amt_moved, int *pay_to_or_pay_from, int *price, int
 }
 	
 
-void rolling_conditions(int index, int a, int b, int *pay_to_or_pay_from, int *price, int *who){
+void rolling_conditions(int index, int *a, int *b, int *pay_to_or_pay_from, int *price, int *who){
+	clear();
+	refresh();
 	if ((players[index].in_jail == 1)&&(players[index].current_position == 11)){
 		players[index].time_spent_in_jail++;
-		print_form("BRODI IN JAIL\n");
-		if (a == b){
+		
+		if (*a == *b){
 			print_form("YOU ROLLED DOUBLES, YOU GET OUT OF JAIL\n");
-			movement(index, a + b, pay_to_or_pay_from, price, who);
+			movement(index, *a + *b, pay_to_or_pay_from, price, who);
 			return;
 		}
 		if (players[index].GOOJFC > 0){
-			if ((a != b)&&(players[index].time_spent_in_jail < 3)){
+			if ((*a != *b)&&(players[index].time_spent_in_jail < 3)){
 				//-would you like to use card, pay, wait for next turn
+				
+				char *opt[] = {"USE CARD",
+					       "PAY",
+					       "WAIT IN JAIL",
+					       NULL};
+				main_menu(opt, 20, 35);
+				if (highlight == 1){
+					clear();
+					refresh();
+					print_form("You have used one of your get our of jail cards.\nPress any key to continue");
+					getch();
+					players[index].in_jail = 0;
+					players[index].time_spent_in_jail = 0;
+					players[index].GOOJFC--;
+					movement(index, *a + *b, pay_to_or_pay_from, price, who);
+
+					return;
+				}
+				if (highlight == 2){
+					clear();
+					refresh();
+					print_form("You are choosing to pay a $50 fine to get out of jail.\nPress any key to continue.");
+					getch();
+					*pay_to_or_pay_from = 0;
+					*price 		    = 50;
+					*who		    = BANK;
+					players[index].in_jail = 0;
+					players[index].time_spent_in_jail = 0;
+					handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+					movement(index, *a + *b, pay_to_or_pay_from, price, who);
+					return;
+				}
+				if (highlight == 3){
+					clear();
+					refresh();
+					print_form("You are still in jail.\nPress any key to continue.");
+					getch();
+					return;				
+				}
 			}
-			if ((a != b)&&(players[index].time_spent_in_jail == 3)){
+			if ((*a != *b)&&(players[index].time_spent_in_jail == 3)){
 				//-would you like to use card, pay 
+				char *opt[] = {"USE CARD",
+					       "PAY",
+					       NULL};
+				main_menu(opt, 20, 35);
+				if (highlight == 1){
+					clear();
+					refresh();
+					print_form("You have used one of your get our of jail cards.\nPress any key to continue");
+					getch();
+					players[index].GOOJFC--;
+					players[index].in_jail = 0;
+					players[index].time_spent_in_jail = 0;
+					movement(index, *a + *b, pay_to_or_pay_from, price, who);
+					return;
+				}
+				if (highlight == 2){
+					clear();
+					refresh();
+					print_form("You are choosing to pay a $50 fine to get out of jail.\nPress any key to continue.");
+					getch();
+					*pay_to_or_pay_from = 0;
+					*price 		    = 50;
+					*who		    = BANK;
+					players[index].in_jail = 0;
+					players[index].time_spent_in_jail = 0;
+					handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+					movement(index, *a + *b, pay_to_or_pay_from, price, who);
+					return;
+				}
 			}
 			return;
 		}
 		if (players[index].GOOJFC == 0){
-			if ((a != b)&&(players[index].time_spent_in_jail < 3)){
+			if ((*a != *b)&&(players[index].time_spent_in_jail < 3)){
 				//-would you like to use pay, wait for next turn
+				char *opt[] = {"PAY",
+					       "WAIT IN JAIL",
+					       NULL};
+				main_menu(opt, 20, 35);
+				if (highlight == 1){
+					clear();
+					refresh();
+					print_form("You are choosing to pay a $50 fine to get out of jail.\nPress any key to continue.");
+					getch();
+					*pay_to_or_pay_from = 0;
+					*price 		    = 50;
+					*who		    = BANK;
+					players[index].in_jail = 0;
+					players[index].time_spent_in_jail = 0;
+					handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+					return;
+				}
+				if (highlight == 2){
+					clear();
+					refresh();
+					print_form("You are still in jail.\nPress any key to continue.");
+					getch();
+					return;				
+				}
 			}
-			if ((a != b)&&(players[index].time_spent_in_jail == 3)){
+			if ((*a != *b)&&(players[index].time_spent_in_jail == 3)){
 				//-would you like to use pay 
+				print_form("You couldn't roll doubles three times in a roll,so you have to pay a $50 fine to get out of jail.\nPress any key to continue.");
+				getch();
+				*pay_to_or_pay_from = 0;
+				*price 		    = 50;
+				*who		    = BANK;
+				players[index].in_jail = 0;
+				players[index].time_spent_in_jail = 0;
+				handle_payment(1, index, *pay_to_or_pay_from, *price, *who, -1);
+				movement(index, *a + *b, pay_to_or_pay_from, price, who);
+				return;
 			}
 			return;
 		}
@@ -1757,22 +1883,51 @@ void rolling_conditions(int index, int a, int b, int *pay_to_or_pay_from, int *p
 	}
 	srand(time(NULL));
 	int count = 1;
-repeat:	movement(index, a + b, pay_to_or_pay_from, price, who);
-	if (a == b){
+repeat:	movement(index, *a + *b, pay_to_or_pay_from, price, who);
+	if (*a == *b){
 		count++;
 		if (count < 3){
-			print_form("RE-ROLL BRO\n");
-			roll_dice(&a, &b);
+			clear();
+			refresh();
+			roll_dice(a, b);
 			goto repeat;
 		}
 		if (count == 3){
-			print_form("GOTO JAIL MAN\n");
-			//goto jail
+			clear();
+			refresh();
+			print_form("GO TO JAIL\n");
+			players[index].current_position = 11;
+			players[index].in_jail		 = 1;
+			print_form("Press any key to proceed");
+			getch();
 		}
 	}
 }				
 
-int main(){
+int main(int argc, char **argv){
+	int number_gotten = 0;
+	if (argc > 2){
+		printf("Too many arguements, please enter a maximum of two arguements.\n");
+		return 1;
+	}
+	if (argc == 2){
+		int k = 0;
+		while (argv[1][k] != '\0'){
+			if ((argv[1][k] < 48)||(argv[1][k] > 57)){
+				printf("Second arguement is the speed, hence must be numeric.\n");
+				return 1;
+			}
+			k++;
+		}
+		for (int i = 0; i < k; i++){
+			int power = 1;
+			for (int j = 0; j < k - i - 1; j++){
+				power = power * 10;
+			}
+			number_gotten = number_gotten + ((argv[1][i] - 48) *  power);
+		} 
+		SPEED = number_gotten;
+	}
 	for (int i = 0; i < 40; i++){
 		mortgage_value[i] = prices[i] /2;
 		mortgage[i] = 0;
@@ -1817,7 +1972,7 @@ int main(){
 	clear();
 
 	
-	print("The rules of the game are simple. Firstly, player usernames that include spaces are truncated. Usernames can only be 15 characters long. Only 2 - 8 players can play at a time. This game can be saved and be resumed at a later date. There is no autosave, save must be done by selecting the save option while playing. PLEASE PLAY IN FULLSCREEN FOR OPTIMAL EXPERIENCE.", y, 0);
+	print("The rules of the game are simple. Firstly, Usernames can only be 5 characters long, while the save names must be at most 15 characters long. Only 2 - 8 players can play at a time. This game can be saved and be resumed at a later date. There is no autosave, save must be done manually by hitting ctrl+s. PLEASE PLAY IN FULLSCREEN FOR OPTIMAL EXPERIENCE.", y, 0);
 
 	refresh();
 	mvprintw(0,0,"Press any button to continue\n");	
@@ -1880,13 +2035,25 @@ skip:	if (highlight == 1){
 	refresh();
 	dash_line(DASH);
 	printw("ABOUT THE BOARD YOU ARE ABOUT TO SEE\n");
-	printw("1. The first value in the box represents the block number\n");
-	printw("2. The second value in the box represents the property color\n");
-	printw("3. The third value in the box represents the owner of the property\n");
-	printw("4. The last value reresents the price of the property\n");
-	printw("5. If the property is morgaged, all this values in the box turn red\n");
-	printw("6. The wide center block shows the name for each property\n");
-	printw("7. The board will be printed after everyturn, press any button when you see this board to move on to the next players turn\n");
+	printw("1. The first value in the box represents the block number.\n");
+	printw("2. The second value in the box represents the property color.\n");
+	printw("3. The third value in the box represents the owner of the property.\n");
+	printw("4. The last value reresents the price of the property.\n");
+	printw("5. If the property is morgaged, all this values in the box turn red.\n");
+	printw("6. The wide center block shows the name for each property.\n");
+	printw("7. The board will be printed after everyturn, press any button when you see this board to move on to the next players turn.\n");
+	printw("8. The current player is marked using the green text\n");
+	printw("9. If the property is mortgaged and another player is currently on the property, the text turns yellow to represent red + green.\n");
+	printw("10. Inside the smaller box, you would see how the to each property, each property has a parenthesis right infront of it to represent the number of houses the property has.\n");
+	printw("11. If a property has 5 houses(5 in the parenthesis), then the property has an hotel.\n");
+	printw("12. Every player starts with $1500 dollars.\n");
+	printw("13. The current position of all players can be seen right in front of the property name. For example, 1. GO>1>2, means player 1 and 2 are on location 1, A.K.A GO.\n");
+	printw("14. Saving and exiting can only be done when the board is printed, when a player is still playing, you are unable to save or exit.\n");
+	printw("15. Save can be done by pressing 'CTRL + S', and exiting can be done by pressing 'esc'.\n");
+	printw("16. To see these rules again, please read the monopoly_emulator_rules.txt.\n");
+	printw("17. As you would notice, the speed of the player movement animation(represented by making the current location green texted) may be too slow or too fast for some users. Therefore, to speed up the animation, be sure to attach a small number while executing this program. For example, running using './a.out 10' makes the animation extremely fast and running using './a.out 5000' makes the animation very slow. So it is recommended to pick a value between 100 - 3000, but again, it depends on YOU.\n");
+	printw("18. Please to read the rules for monopoly, open up the rules.txt file. It contains the official monopoly rules as provided by hasbro.\n");
+
 
 	dash_line(DASH);
 	printw("Press any key to continue");
@@ -1932,26 +2099,15 @@ before_roll:	refresh();
 		int a, b;
 		int prev = players[curr_player].current_position;
 		if (highlight == 1){
-			//clear();
+
 			
 			roll_dice(&a, &b);
-			clear();
-			refresh();
-			print_form("Your first dice is %d, and your second is %d\n", a, b);
-			print_form("You have a total of %d\n", a+b);
-			print_form("Please press any key to continue");
-			getch();
+
 			int s,v,w;
 			clear();
 			refresh();
-			movement(curr_player, a+b, &s, &v, &w);
-			//players[curr_player].current_position = a + b;
-			//auction(curr_player, 5);
+			rolling_conditions(curr_player, &a, &b, &s, &v, &w);
 
-			//handle_payment(2, curr_player, 0, 10, BANK, -1);
-			//int a, b, pay_to_or_pay_from, price, who;
-			//roll_dice(&a, &b);
-			//movement(curr_player, a + b, &pay_to_or_pay_from, &price, &who);
 		}
 		else if (highlight == 8){
 			declare_bankruptcy(curr_player);

@@ -8,4 +8,5 @@ opoly.c.
 ise.
 -to learn more about ncurses, visit 'https://tldp.org/HOWTO/NCURSES-Programming-HOWTO/misc.html'
 -monopoly rules 'http://www.jdawiseman.com/papers/trivia/monopoly-rents.html'
+-more monopoly rules 'http://www.mtholyoke.edu/~blerner/cs315/Monopoly/MonopolyRules.pdf?tag=makemoney0821-20'
 

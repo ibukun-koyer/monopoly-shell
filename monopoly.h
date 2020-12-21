@@ -16,7 +16,7 @@
 #define RIGHT 5
 #define BACKSPACE 127
 #define TEXT_WIDTH 50
-#define INITIAL_CASH 2000
+#define INITIAL_CASH 1500
 #define GREEN(string) "\x1b[32m" string "\x1b[0m"
 #define RED(string) "\x1b[31m" string "\x1b[0m"
 #define BANK 0
@@ -40,6 +40,8 @@ struct player{
 	int GOOJFC;
 
 }typedef player_t;
+
+static int SPEED = 1000;
 
 static int curr_player = 0;
 

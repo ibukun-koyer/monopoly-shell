@@ -388,7 +388,7 @@ redo:	refresh();
 	outer = newwin(height, width, starty, startx);
 	
 	inner = newwin(inner_height, inner_width, inner_starty, inner_startx);
-	box(outer, 0, 0);	//create the box outline for the outer window
+redraw:	box(outer, 0, 0);	//create the box outline for the outer window
 	box(inner, 0, 0);	//create the box outline for the inner window
 	int bars = 9;
 	for (int i = 0; i < width; i++){
@@ -565,13 +565,13 @@ redo:	refresh();
 	wrefresh(outer);
 	wrefresh(inner);
 	raw();
-	while (i < dice){
+	while ((i < dice)&&(players[play].in_jail == 0)){
 
 
-		napms(500);
+		napms(SPEED);
 
-		destroy_win(outer);
-		destroy_win(inner);
+		//destroy_win(outer);
+		//destroy_win(inner);
 				
 		clear();
 		//refresh();
@@ -580,20 +580,26 @@ redo:	refresh();
 			start = start - 40 - 1;
 		}
 		i++;
-		goto redo;
+
+		wrefresh(inner);
+		wrefresh(outer);
+		goto redraw;
 	}
 	if (i == dice){
 
 
-		napms(500);
-		destroy_win(outer);
-		destroy_win(inner);
+		napms(SPEED);
+		//destroy_win(outer);
+		//destroy_win(inner);
 				
 
 		clear();
 		//refresh();
 		i++;
 		start = players[play].current_position - 1;
+
+		wrefresh(inner);
+		wrefresh(outer);
 		goto redo;
 	}
 	char ch = getch();
@@ -630,6 +636,7 @@ redo:	refresh();
 			
 			
 			endwin();
+			printf(GREEN("APPLICATION: Application closed successfully\n"));
 			exit(0);
 		}
 		if (retry == 0){
